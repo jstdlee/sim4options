@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sim4options",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/agents/*"]
+  },
+  "ai": { "binding": "AI" },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sim4options",
+      "database_id": "e098a1cc-ae81-47fb-948e-f7aec0cf8b2f",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "TutorAgent", "class_name": "TutorAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TutorAgent"] }],
+  "vars": {
+    "LLM_MODEL": "@cf/moonshotai/kimi-k2.6",
+    "CLEF_MODEL": "@cf/cloudflare/clef",
+    "CLEF_FLASH_MODEL": "@cf/cloudflare/clef-flash",
+    "AI_GATEWAY_ID": "sim4options",
+    "CF_ACCOUNT_ID": "5dad3314e49aaa2cde5dc0f5cf43b785"
+  },
+  "observability": { "enabled": true }
+}

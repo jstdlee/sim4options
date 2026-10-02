@@ -1,0 +1,195 @@
+import type { Question, Step, Level } from '../shared/types'
+
+export const LEVELS: Level[] = [
+  { n: 1, name: 'Foundations', blurb: 'Calls, puts, strikes, premium and moneyness.' },
+  { n: 2, name: 'Pricing drivers', blurb: 'IV, time decay and the Greeks.' },
+  { n: 3, name: 'Single-leg trades', blurb: 'Pick direction, then strike and expiry.' },
+  { n: 4, name: 'Spreads & volatility', blurb: 'Direction + volatility view → structure.' },
+  { n: 5, name: 'Indicators combined', blurb: 'IV Rank, RSI, trend and events together.' },
+  { n: 6, name: 'Managing trades', blurb: 'Rolls, assignment, sizing, exits.' },
+  { n: 7, name: 'Simulator drills', blurb: 'Build, advance time, manage.' },
+]
+
+const s = (prompt: string, choices: [string, string][], answer: string, why: string): Step => ({
+  prompt, choices: choices.map(([id, label]) => ({ id, label })), answer, why,
+})
+
+export const AUTHORED: Question[] = [
+  // ───────── L1
+  { id: 'l1-01', level: 1, title: 'Which right?', terms: ['call', 'put'], tags: ['basics'],
+    scenario: 'You think XYZ will rise over the next month.',
+    steps: [s('Which option gives you the right to [[call|buy]] at a fixed price?', [['a', 'Call'], ['b', 'Put']], 'a', 'A call is the right to buy at the strike.')] },
+  { id: 'l1-02', level: 1, title: 'Moneyness check', terms: ['itm', 'otm', 'strike', 'spot'], tags: ['basics'], spot: 105,
+    scenario: 'XYZ trades at $105 ([[spot]]). You look at the $100 [[call]].',
+    steps: [s('Is the $100 call ITM, ATM or OTM?', [['itm', 'In the money'], ['atm', 'At the money'], ['otm', 'Out of the money']], 'itm', 'Spot $105 > strike $100, so the call has $5 of [[intrinsic]] value.')] },
+  { id: 'l1-03', level: 1, title: 'Put moneyness', terms: ['put', 'otm'], tags: ['basics'], spot: 105,
+    scenario: 'XYZ is $105. Consider the $100 [[put]].',
+    steps: [s('Is the $100 put ITM or OTM?', [['itm', 'ITM'], ['otm', 'OTM']], 'otm', 'A put is ITM only when spot is below the strike.')] },
+  { id: 'l1-04', level: 1, title: 'Split the premium', terms: ['premium', 'intrinsic', 'extrinsic'], tags: ['pricing'], spot: 52,
+    scenario: 'Stock $52. The $50 call costs $3.40.',
+    steps: [
+      s('What is the [[intrinsic]] value?', [['a', '$2.00'], ['b', '$3.40'], ['c', '$0']], 'a', '52 − 50 = $2.'),
+      s('What is the [[extrinsic]] value?', [['a', '$1.40'], ['b', '$2.00'], ['c', '$3.40']], 'a', '3.40 − 2.00 = $1.40 of time/volatility value.'),
+    ] },
+  { id: 'l1-05', level: 1, title: 'Real cost', terms: ['multiplier', 'premium'], tags: ['basics'],
+    scenario: 'A call is quoted at $1.85.',
+    steps: [s('What does one contract cost?', [['a', '$1.85'], ['b', '$18.50'], ['c', '$185']], 'c', 'US equity options have a 100-share [[multiplier]].')] },
+  { id: 'l1-06', level: 1, title: 'At expiry', terms: ['expiration', 'otm'], tags: ['basics'],
+    scenario: 'You hold a $60 call. At [[expiration]] the stock closes at $58.',
+    steps: [s('What happens?', [['a', 'Expires worthless'], ['b', 'Auto-exercised'], ['c', 'Worth $2']], 'a', 'It is OTM at expiry: no [[intrinsic]] value, so it expires worthless.')] },
+
+  // ───────── L2
+  { id: 'l2-01', level: 2, title: 'Delta as a lever', terms: ['delta'], tags: ['greeks'],
+    scenario: 'Your call has a [[delta]] of 0.40. The stock rises $2.',
+    steps: [s('Approximate change in option price?', [['a', '+$0.40'], ['b', '+$0.80'], ['c', '+$2.00']], 'b', '0.40 × $2 = $0.80 per share.')] },
+  { id: 'l2-02', level: 2, title: 'Time decay', terms: ['theta', 'dte'], tags: ['greeks', 'time'],
+    scenario: 'Two identical ATM calls: one with 60 [[dte|DTE]], one with 7 DTE.',
+    steps: [s('Which loses value faster per day?', [['a', '60 DTE'], ['b', '7 DTE']], 'b', '[[theta]] accelerates as expiry nears, especially ATM.')] },
+  { id: 'l2-03', level: 2, title: 'Vol goes up', terms: ['vega', 'iv'], tags: ['greeks', 'volatility'],
+    scenario: 'Your long put has [[vega]] 0.12. [[iv|IV]] rises from 30% to 35%, price unchanged.',
+    steps: [s('Approximate change?', [['a', '+$0.12'], ['b', '+$0.60'], ['c', '−$0.60']], 'b', '5 vol points × 0.12 = +$0.60. Long options gain from rising IV.')] },
+  { id: 'l2-04', level: 2, title: 'Where gamma lives', terms: ['gamma', 'atm'], tags: ['greeks'],
+    scenario: 'Compare gamma across strikes, 3 days to expiry.',
+    steps: [s('Where is [[gamma]] highest?', [['a', 'Deep ITM'], ['b', 'ATM'], ['c', 'Far OTM']], 'b', 'Delta changes fastest around the strike, most violently near expiry.')] },
+  { id: 'l2-05', level: 2, title: 'IV Rank read', terms: ['iv-rank', 'iv'], tags: ['volatility', 'indicator'],
+    scenario: '1-yr IV range is 20%–60%. Current IV is 50%.',
+    steps: [
+      s('What is the [[iv-rank|IV Rank]]?', [['a', '50'], ['b', '75'], ['c', '83']], 'b', '(50−20)/(60−20) = 75.'),
+      s('So options are relatively…', [['a', 'Cheap'], ['b', 'Expensive']], 'b', 'IV in the top quarter of its range: premium sellers get paid more.'),
+    ] },
+  { id: 'l2-06', level: 2, title: 'Expected move', terms: ['expected-move', 'iv'], tags: ['volatility'], spot: 200,
+    scenario: 'Stock $200, IV 40%, 30 days out.',
+    steps: [s('Approximate 1σ [[expected-move|expected move]]?', [['a', '±$8'], ['b', '±$23'], ['c', '±$80']], 'b', '200 × 0.40 × √(30/365) ≈ $22.9.')] },
+
+  // ───────── L3
+  { id: 'l3-01', level: 3, title: 'Bullish, defined risk', terms: ['long-call', 'breakeven'], tags: ['strategy', 'bullish'], spot: 100,
+    legs: [{ type: 'call', side: 1, strike: 100, premium: 4 }],
+    scenario: 'Stock $100. You expect a rally to ~$115 in 6 weeks and want risk capped.',
+    steps: [
+      s('Direction?', [['bull', 'Bullish'], ['bear', 'Bearish'], ['neu', 'Neutral']], 'bull', 'You expect a rise.'),
+      s('Instrument?', [['lc', 'Buy a call'], ['sp', 'Sell a put'], ['lp', 'Buy a put']], 'lc', 'Buying a call is bullish with [[max-loss]] = premium.'),
+      s('The $100 call costs $4. [[breakeven|Breakeven]] at expiry?', [['a', '$96'], ['b', '$100'], ['c', '$104']], 'c', 'Strike + premium = $104.'),
+    ] },
+  { id: 'l3-02', level: 3, title: 'Insurance', terms: ['protective-put', 'put'], tags: ['strategy', 'hedge'], spot: 150,
+    legs: [{ type: 'stock', side: 1, premium: 150 }, { type: 'put', side: 1, strike: 140, premium: 2.5 }],
+    scenario: 'You own 100 shares at $150 and fear a drop next month but don\'t want to sell.',
+    steps: [
+      s('Best structure?', [['pp', 'Protective put'], ['cc', 'Covered call'], ['ls', 'Short more stock']], 'pp', 'A [[protective-put]] floors your loss and keeps upside.'),
+      s('Buy the $140 put for $2.50. Max loss on the combined position?', [['a', '$2.50/sh'], ['b', '$12.50/sh'], ['c', 'Unlimited']], 'b', '(150 − 140) + 2.50 = $12.50.'),
+    ] },
+  { id: 'l3-03', level: 3, title: 'Paid to wait', terms: ['cash-secured-put', 'assignment'], tags: ['strategy', 'income'], spot: 50,
+    legs: [{ type: 'put', side: -1, strike: 45, premium: 1.2 }],
+    scenario: 'You\'d happily buy XYZ at $45. It trades at $50.',
+    steps: [
+      s('Which trade fits?', [['csp', 'Sell a $45 cash-secured put'], ['lc', 'Buy a $45 call'], ['lp', 'Buy a $45 put']], 'csp', 'You collect premium and may be [[assignment|assigned]] at a price you like.'),
+      s('Premium $1.20. Effective buy price if assigned?', [['a', '$43.80'], ['b', '$45.00'], ['c', '$46.20']], 'a', '45 − 1.20.'),
+    ] },
+  { id: 'l3-04', level: 3, title: 'Income on shares', terms: ['covered-call'], tags: ['strategy', 'income'], spot: 80,
+    legs: [{ type: 'stock', side: 1, premium: 80 }, { type: 'call', side: -1, strike: 88, premium: 1.5 }],
+    scenario: 'You own 100 shares at $80, expect a slow grind, OK selling at $88.',
+    steps: [
+      s('Structure?', [['cc', 'Covered call at $88'], ['lc', 'Buy $88 call'], ['pp', 'Buy $75 put']], 'cc', 'A [[covered-call]] harvests [[theta]] while capping upside at your target.'),
+      s('Main risk you accept?', [['a', 'Missing upside above $88'], ['b', 'Unlimited loss'], ['c', 'IV crush']], 'a', 'Gains above the short strike go to the call buyer.'),
+    ] },
+  { id: 'l3-05', level: 3, title: 'Strike choice', terms: ['delta', 'otm', 'itm'], tags: ['strategy'], spot: 100,
+    scenario: 'Bullish. You want the option to behave close to stock.',
+    steps: [s('Pick the strike.', [['itm', '$85 call (Δ 0.85)'], ['atm', '$100 call (Δ 0.50)'], ['otm', '$115 call (Δ 0.15)']], 'itm', 'High-[[delta]] ITM calls track stock with less [[extrinsic]] value to decay.')] },
+  { id: 'l3-06', level: 3, title: 'Bearish thesis', terms: ['long-put', 'dte'], tags: ['strategy', 'bearish'],
+    scenario: 'You expect a drop over ~2 months after a guidance cut.',
+    steps: [
+      s('Instrument?', [['lp', 'Buy put'], ['lc', 'Buy call'], ['csp', 'Sell put']], 'lp', 'Bearish, defined risk.'),
+      s('Expiry?', [['w', '1 week'], ['m3', '~3 months'], ['y', '2 years']], 'm3', 'Give the thesis room beyond the 2-month window without overpaying for [[leaps]].'),
+    ] },
+
+  // ───────── L4
+  { id: 'l4-01', level: 4, title: 'Cheaper bull', terms: ['bull-call-spread', 'debit-spread'], tags: ['spread', 'bullish'], spot: 100,
+    legs: [{ type: 'call', side: 1, strike: 100, premium: 5 }, { type: 'call', side: -1, strike: 110, premium: 1.8 }],
+    scenario: 'Bullish to ~$110, but IV is elevated and calls feel pricey.',
+    steps: [
+      s('Direction?', [['bull', 'Bullish'], ['bear', 'Bearish']], 'bull', 'Target is above spot.'),
+      s('Volatility view?', [['hi', 'IV high → reduce vega'], ['lo', 'IV low → own vega']], 'hi', 'Selling a call against your long offsets [[vega]].'),
+      s('Structure?', [['bcs', '100/110 bull call spread'], ['lc', 'Naked 100 call'], ['st', 'Long straddle']], 'bcs', 'Pay $3.20 net, max profit $6.80, risk defined.'),
+    ] },
+  { id: 'l4-02', level: 4, title: 'Range-bound & rich IV', terms: ['iron-condor', 'iv-rank'], tags: ['spread', 'neutral', 'income'], spot: 400,
+    legs: [{ type: 'put', side: 1, strike: 370, premium: 1.5 }, { type: 'put', side: -1, strike: 380, premium: 3 }, { type: 'call', side: -1, strike: 420, premium: 3 }, { type: 'call', side: 1, strike: 430, premium: 1.5 }],
+    scenario: 'Index at $400, IV Rank 70, no events for 30 days. You expect chop.',
+    steps: [
+      s('Direction?', [['neu', 'Neutral'], ['bull', 'Bullish'], ['bear', 'Bearish']], 'neu', 'Expect a range.'),
+      s('Volatility stance?', [['sell', 'Sell premium'], ['buy', 'Buy premium']], 'sell', 'High [[iv-rank]] favors sellers.'),
+      s('Structure?', [['ic', '370/380/420/430 iron condor'], ['ss', 'Short straddle naked'], ['ls', 'Long strangle']], 'ic', 'Defined-risk [[iron-condor]] collects $3 with $7 max loss.'),
+    ] },
+  { id: 'l4-03', level: 4, title: 'Big move, unknown direction', terms: ['straddle', 'expected-move'], tags: ['volatility'], spot: 50,
+    scenario: 'Biotech at $50 awaits an FDA ruling. IV is still moderate (IV Rank 35).',
+    steps: [
+      s('Direction?', [['unk', 'Unknown — binary'], ['bull', 'Bullish']], 'unk', 'Outcome is binary.'),
+      s('Structure?', [['ls', 'Long straddle'], ['ic', 'Iron condor'], ['cc', 'Covered call']], 'ls', 'A [[straddle]] profits from a large move either way.'),
+      s('What must happen to profit?', [['a', 'Move > straddle cost'], ['b', 'Any move'], ['c', 'IV must fall']], 'a', 'Price must move beyond the [[breakeven]]s = strike ± total premium.'),
+    ] },
+  { id: 'l4-04', level: 4, title: 'Credit vs debit', terms: ['credit-spread', 'debit-spread', 'theta'], tags: ['spread'],
+    scenario: 'Mildly bullish, IV Rank 80, 35 DTE.',
+    steps: [
+      s('Better fit?', [['bps', 'Sell a put credit spread'], ['bcs', 'Buy a call debit spread']], 'bps', 'High IV + time decay favor a [[credit-spread]] below support.'),
+      s('Where to put the short strike?', [['otm', 'Below support, ~0.25 Δ'], ['atm', 'At the money'], ['itm', 'Above spot']], 'otm', 'A cushion below support with a reasonable credit.'),
+    ] },
+  { id: 'l4-05', level: 4, title: 'Calendar logic', terms: ['calendar', 'theta', 'vega'], tags: ['time'],
+    scenario: 'Stock pinned near $100. Front-month IV 45%, back-month IV 30%.',
+    steps: [s('Which structure exploits this?', [['cal', 'Sell front $100, buy back $100 (calendar)'], ['rev', 'Buy front, sell back'], ['st', 'Long straddle front']], 'cal', 'Sell the rich, fast-decaying front; own the cheaper back month.')] },
+  { id: 'l4-06', level: 4, title: 'Strangle vs straddle', terms: ['strangle', 'straddle'], tags: ['volatility'],
+    scenario: 'You want a cheap lottery ticket on a huge move.',
+    steps: [s('Pick.', [['str', 'OTM strangle'], ['std', 'ATM straddle']], 'str', 'Cheaper, but needs a bigger move to pay off.')] },
+
+  // ───────── L5
+  { id: 'l5-01', level: 5, title: 'Overbought into earnings', terms: ['rsi', 'iv-rank', 'earnings', 'iv-crush'], tags: ['indicator', 'events'],
+    scenario: 'RSI 78, IV Rank 88, earnings in 2 days, stock up 25% in a month.',
+    steps: [
+      s('Biggest pricing risk for an option buyer?', [['crush', 'IV crush after the report'], ['rho', 'Rate change'], ['div', 'Dividend']], 'crush', 'IV collapses after earnings; long premium loses even on a modest move.'),
+      s('Momentum read?', [['ob', 'Overbought, pullback risk'], ['os', 'Oversold']], 'ob', '[[rsi]] above 70.'),
+      s('Structure for a cautious bearish lean?', [['ccs', 'Call credit spread above highs'], ['lc', 'Buy calls'], ['lp', 'Buy ATM puts']], 'ccs', 'Sells rich IV with defined risk while leaning against the extension.'),
+    ] },
+  { id: 'l5-02', level: 5, title: 'Uptrend dip, cheap vol', terms: ['moving-average', 'rsi', 'iv-rank', 'long-call'], tags: ['indicator'],
+    scenario: 'Above the 200-day MA, pulled back to the 50-day. RSI 38, IV Rank 12.',
+    steps: [
+      s('Trend context?', [['up', 'Uptrend'], ['dn', 'Downtrend']], 'up', 'Price above the 200-day.'),
+      s('Premium stance?', [['buy', 'Buy premium (cheap)'], ['sell', 'Sell premium']], 'buy', 'Low IV Rank = options cheap.'),
+      s('Structure?', [['lc', 'Long call 60 DTE'], ['ccs', 'Call credit spread'], ['ic', 'Iron condor']], 'lc', 'Directional, long [[vega]], at a cheap price.'),
+    ] },
+  { id: 'l5-03', level: 5, title: 'Fear spike', terms: ['vix', 'skew', 'cash-secured-put'], tags: ['volatility', 'market'],
+    scenario: 'VIX jumps from 14 to 32. Put [[skew]] is steep. You like the stock long-term.',
+    steps: [
+      s('Puts are…', [['rich', 'Rich'], ['cheap', 'Cheap']], 'rich', 'High VIX and steep skew inflate put premiums.'),
+      s('Way to get long?', [['csp', 'Sell cash-secured puts below support'], ['lp', 'Buy puts'], ['lc', 'Buy OTM calls']], 'csp', 'Get paid elevated premium to buy lower.'),
+      s('Key risk control?', [['size', 'Small size, cash reserved'], ['margin', 'Max margin']], 'size', 'Volatility can stay high; [[position-sizing]] keeps you alive.'),
+    ] },
+  { id: 'l5-04', level: 5, title: 'Squeeze setup', terms: ['gamma-squeeze', 'open-interest', 'gamma'], tags: ['market'],
+    scenario: 'Huge call open interest just above spot, short interest 30%, price breaking out.',
+    steps: [
+      s('Dynamic at play?', [['gs', 'Possible gamma squeeze'], ['crush', 'IV crush']], 'gs', 'Dealers short calls buy stock as price rises.'),
+      s('Safer participation?', [['bcs', 'Defined-risk call spread'], ['nc', 'Sell naked calls'], ['margin', 'Margin stock']], 'bcs', 'Squeezes reverse violently; cap risk.'),
+    ] },
+  { id: 'l5-05', level: 5, title: 'Downtrend bounce', terms: ['moving-average', 'rsi', 'bear-put-spread'], tags: ['indicator'],
+    scenario: 'Below the 200-day, RSI 64 after a bounce into the 50-day. IV Rank 55.',
+    steps: [
+      s('Bias?', [['bear', 'Bearish (fade the bounce)'], ['bull', 'Bullish']], 'bear', 'Bounce into resistance in a downtrend.'),
+      s('Structure?', [['bps', 'Bear put spread'], ['lp', 'Naked long put'], ['csp', 'Short put']], 'bps', 'Mid IV: spread cuts vega and cost.'),
+    ] },
+
+  // ───────── L6
+  { id: 'l6-01', level: 6, title: 'Tested short put', terms: ['roll', 'cash-secured-put'], tags: ['management'],
+    scenario: 'Short $45 put, stock fell to $44, 5 DTE. Still bullish long-term.',
+    steps: [
+      s('Choices?', [['roll', 'Roll down & out for a credit'], ['ignore', 'Ignore it'], ['double', 'Sell more puts']], 'roll', '[[roll|Rolling]] buys time and lowers the strike while collecting credit.'),
+      s('If you\'d rather own shares?', [['assign', 'Accept assignment'], ['close', 'Must close']], 'assign', 'Assignment at an effective price you planned for is fine.'),
+    ] },
+  { id: 'l6-02', level: 6, title: 'Take profits', terms: ['iron-condor', 'gamma'], tags: ['management'],
+    scenario: 'Iron condor is at 60% of max profit with 10 DTE.',
+    steps: [s('Typical move?', [['close', 'Close and redeploy'], ['hold', 'Hold to expiry']], 'close', 'Remaining reward is small while [[gamma]] risk rises near expiry.')] },
+  { id: 'l6-03', level: 6, title: 'Pin on Friday', terms: ['pin-risk', 'assignment'], tags: ['management', 'risk'],
+    scenario: 'Friday 3:30pm. Stock $50.02. You\'re short the $50 call of a spread.',
+    steps: [s('Safest action?', [['close', 'Close the spread'], ['hold', 'Hold through close']], 'close', '[[pin-risk]]: after-hours moves can leave you unexpectedly assigned.')] },
+  { id: 'l6-04', level: 6, title: 'Sizing', terms: ['position-sizing', 'max-loss'], tags: ['management', 'risk'],
+    scenario: '$20,000 account. A spread risks $500 per contract. You risk 2% per trade.',
+    steps: [s('How many contracts?', [['a', '0 — too big'], ['b', '1'], ['c', '4']], 'a', '2% = $400 < $500. Find a narrower spread.')] },
+  { id: 'l6-05', level: 6, title: 'Winner with time left', terms: ['long-call', 'roll', 'delta'], tags: ['management'],
+    scenario: 'Long $100 call bought at $3, stock now $118, 30 DTE left.',
+    steps: [s('Lock gains but keep exposure?', [['roll', 'Roll up: sell 100s, buy 115s'], ['hold', 'Hold it all'], ['add', 'Buy more 100s']], 'roll', 'Takes most risk off while keeping upside.')] },
+]

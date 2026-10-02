@@ -1,0 +1,46 @@
+:root {
+  --ink: #13223b;      /* page */
+  --panel: #1b2e4d;    /* surfaces */
+  --line: #2b4469;     /* rules */
+  --paper: #eef2f7;    /* text */
+  --muted: #93a4be;
+  --call: #3dbe8b;     /* calls / profit */
+  --put: #ef6f5e;      /* puts / loss */
+  --vol: #e9b949;      /* volatility & Greeks */
+  --ui: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --read: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  color-scheme: dark;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: inherit; }
+html, body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--ui); font-size: 16px; line-height: 1.5; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid var(--vol); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.15; margin: 0 0 .5rem; font-weight: 800; letter-spacing: -0.01em; }
+h1 { font-size: clamp(1.9rem, 5vw, 3rem); }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0 0 .75rem; }
+.read { font-family: var(--read); font-size: 1.06rem; line-height: 1.62; max-width: 68ch; }
+.muted { color: var(--muted); }
+.wrap { max-width: 980px; margin: 0 auto; padding: 1rem 1.1rem 6rem; }
+.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .95rem; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--paper); color: var(--ink); border-color: var(--paper); font-weight: 600; }
+.btn:disabled { opacity: .45; cursor: default; }
+.chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--line); border-radius: 999px; padding: .15rem .65rem; font-size: .85rem; background: transparent; }
+.chip.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+.term-link { background: none; border: 0; padding: 0; color: var(--vol); text-decoration: underline dotted; text-underline-offset: 3px; font: inherit; }
+.surface { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; }
+input, select, textarea { font: inherit; color: var(--paper); background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .65rem; width: 100%; }
+.row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+.grow { flex: 1; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* Google Translate: hide its top banner, hover balloons and highlight; keep the page in place. */
+body > .skiptranslate, iframe.skiptranslate, .goog-te-banner-frame, #goog-gt-tt, .goog-te-balloon-frame { display: none !important; }
+body { top: 0 !important; position: static !important; }
+.goog-text-highlight { background: none !important; box-shadow: none !important; }

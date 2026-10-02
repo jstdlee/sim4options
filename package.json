@@ -1,0 +1,32 @@
+{
+  "name": "sim4options",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply sim4options --local",
+    "db:migrate": "wrangler d1 migrations apply sim4options --remote",
+    "deploy": "vite build && wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "agents": "latest",
+    "hono": "^4.6.0",
+    "pinia": "^2.2.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "latest",
+    "@cloudflare/workers-types": "latest",
+    "@vitejs/plugin-vue": "latest",
+    "typescript": "^5.6.0",
+    "vite": "latest",
+    "vue-tsc": "latest",
+    "wrangler": "latest"
+  }
+}
