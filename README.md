@@ -15,7 +15,7 @@ and Workers AI with the **Clef** decision models. Bring-your-own-key models go t
   Multi-step decisions, payoff charts, swipe and ← → navigation.
 - **Skill cards and term map:** 130 linked terms with tag filters, a term cloud sized by use and coloured by
   mastery, and a relationship graph. `[[term]]` links open a term card from any text.
-- **Market moments:** 14 real events (NVDA 2023, Volmageddon, GME 2021, the COVID crash, SVB, Aug 2024 VIX spike …),
+- **Market moments:** 100 real events (earnings gaps, Fed and CPI shocks, crashes, squeezes, deals and biotech, commodities and rates),
   three checkpoints each.
 - **Simulator:** 14 structures (spreads, condors, butterflies, straddles, collars …). Move spot and IV, let time pass,
   watch P&L and the Greeks.
@@ -23,7 +23,12 @@ and Workers AI with the **Clef** decision models. Bring-your-own-key models go t
   (`/api/clef/grade`).
 - **Ask Kon:** a floating tutor chat. It sees what is on screen (question, term card, moment, simulator position),
   offers one-tap questions, and answers in Markdown.
-- **Languages:** a globe menu translates the page with Google Translate.
+- **Search everything:** Ctrl+K searches pages, terms, questions, moments and simulator structures.
+- **Knowledge map modal:** click a term in the map to explore its links, then open the full card.
+- **Answer cache:** repeated or similar questions on the same screen come from Kon's notes (D1 + Vectorize, bge-m3).
+- **Web search:** Cloudflare Web Search API first, Exa as backup (`EXA_API_KEY` secret), when Clef says a question needs fresh facts.
+- **BYOK:** OpenAI, Anthropic, Google, Workers AI models, or any OpenAI-compatible HTTPS endpoint.
+- **Languages:** a globe menu translates the page with Google Translate, with Google Fonts for each script.
 - **Private by default:** an access-token login protects every API route and the tutor.
 
 ## Setup
@@ -38,11 +43,18 @@ npm run db:migrate
 
 # 2. Create an AI Gateway named "sim4options" and set CF_ACCOUNT_ID in wrangler.jsonc (needed for BYOK)
 
-# 3. Set one or more login tokens (comma-separated)
+# 3. Answer cache index (bge-m3 = 1024 dims) + metadata filter
+npx wrangler vectorize create sim4options-qa --dimensions 1024 --metric cosine
+npx wrangler vectorize create-metadata-index sim4options-qa --propertyName ctx --type string
+
+# 4. Optional backup web search
+npx wrangler secret put EXA_API_KEY
+
+# 5. Set one or more login tokens (comma-separated)
 npx wrangler secret put ACCESS_TOKEN
 cp .dev.vars.example .dev.vars   # local token for `npm run dev`
 
-# 4. Run locally, then deploy
+# 6. Run locally, then deploy
 npm run db:migrate:local
 npm run dev
 npm run deploy

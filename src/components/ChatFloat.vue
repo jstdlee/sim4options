@@ -8,10 +8,15 @@ import { useApp } from '../stores/app'
 
 const app = useApp()
 const route = useRoute()
-type Msg = { role: 'user' | 'assistant' | 'error'; text: string; ctx?: string }
+type Msg = {
+  role: 'user' | 'assistant' | 'error'; text: string; ctx?: string
+  sources?: { title: string; url: string }[]; cached?: { similarity: number; exact: boolean }; ask?: { q: string; ctx: string }
+}
 const msgs = ref<Msg[]>([])
 const input = ref('')
 const pending = ref(false)
+const statusText = ref('Thinking…')
+let lastAsk: { q: string; ctx: string } | null = null
 const log = ref<HTMLElement>()
 let client: AgentClient | null = null
 
@@ -40,7 +45,8 @@ function connect() {
   client.addEventListener('message', (ev: MessageEvent) => {
     let d: any
     try { d = JSON.parse(String(ev.data)) } catch { return }
-    if (d.type === 'answer') { msgs.value.push({ role: 'assistant', text: d.text }); pending.value = false }
+    if (d.type === 'status') { statusText.value = d.text; return }
+    if (d.type === 'answer') { msgs.value.push({ role: 'assistant', text: d.text, sources: d.sources, cached: d.cached, ask: lastAsk ?? undefined }); pending.value = false }
     else if (d.type === 'error') { msgs.value.push({ role: 'error', text: d.text }); pending.value = false }
     scroll()
   })
@@ -48,17 +54,22 @@ function connect() {
 const scroll = () => nextTick(() => log.value?.scrollTo({ top: log.value.scrollHeight }))
 watch(() => app.chatOpen, (open) => { if (open) connect() })
 
-function send(q?: string) {
+function send(q?: string, fresh = false, ctxText?: string) {
   const text = (q ?? input.value).trim()
   if (!text || pending.value) return
   connect()
   const c = share.value ? ctx.value : null
-  msgs.value.push({ role: 'user', text, ctx: c?.label })
+  const context = ctxText ?? c?.text ?? ''
+  if (!fresh) msgs.value.push({ role: 'user', text, ctx: c?.label })
   pending.value = true
-  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context: c?.text ?? '', byok: app.byokPayload }))
+  statusText.value = fresh ? 'Asking again…' : 'Checking Kon’s notes…'
+  lastAsk = { q: text, ctx: context }
+  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context, byok: app.byokPayload, fresh }))
   if (!q) input.value = ''
   scroll()
 }
+/** The answer came from the cache; ask the model again on the same screen. */
+function again(m: Msg) { if (m.ask) send(m.ask.q, true, m.ask.ctx) }
 function clear() { msgs.value = []; client?.send(JSON.stringify({ type: 'reset' })) }
 onBeforeUnmount(() => client?.close())
 </script>
@@ -79,9 +90,15 @@ onBeforeUnmount(() => client?.close())
       <FoxSticker v-if="!msgs.length" class="empty" pose="point" :size="110" :say="share && ctx ? 'I can see what you are looking at. Tap a question below or type your own.' : 'Ask me anything about options.'" />
       <div v-for="(m, i) in msgs" :key="i" :class="['line', m.role]">
         <img v-if="m.role === 'assistant'" class="av" src="/fox/head.webp" alt="" />
-        <div :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" /><template v-else>{{ m.text }}<small v-if="m.ctx" class="about"><i class="fa-solid fa-eye" aria-hidden="true" /> {{ m.ctx }}</small></template></div>
+        <div :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" />
+          <ol v-if="m.sources?.length" class="sources" aria-label="Sources">
+            <li v-for="(src, k) in m.sources" :key="k"><a :href="src.url" target="_blank" rel="noopener noreferrer">{{ src.title }}</a></li>
+          </ol>
+          <p v-if="m.cached" class="memo"><i class="fa-solid fa-bookmark" aria-hidden="true" />
+            From Kon’s notes{{ m.cached.exact ? '' : ` · ${Math.round(m.cached.similarity * 100)}% match` }}
+            <button v-if="m.ask" class="linkish" :disabled="pending" @click="again(m)">Ask again fresh</button></p><template v-else>{{ m.text }}<small v-if="m.ctx" class="about"><i class="fa-solid fa-eye" aria-hidden="true" /> {{ m.ctx }}</small></template></div>
       </div>
-      <FoxSticker v-if="pending" class="pending" pose="think" :size="56" say="Thinking…" />
+      <FoxSticker v-if="pending" class="pending" :pose="statusText.startsWith('Searching') ? 'study' : 'think'" :size="56" :say="statusText" />
     </div>
     <div v-if="!pending" class="quick" aria-label="Suggested questions">
       <button v-for="qq in quick" :key="qq" class="chip" @click="send(qq)">{{ qq }}</button>
@@ -107,6 +124,11 @@ header .av { width: 34px; height: 34px; }
 .ctx.off span { color: var(--muted); }
 .quick { display: flex; flex-wrap: wrap; gap: .35rem; padding: 2px; }
 .quick .chip { white-space: nowrap; font-size: .8rem; }
+.sources { margin: .5rem 0 0; padding-left: 1.2rem; font-family: var(--ui); font-size: .78rem; }
+.sources a { color: var(--teal); word-break: break-word; }
+.memo { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: .45rem 0 0; font-family: var(--ui); font-size: .75rem; color: var(--muted); }
+.memo i { color: var(--teal); }
+.linkish { border: 0; background: none; padding: 0; color: var(--teal); font-weight: 800; text-decoration: underline; }
 .about { display: block; margin-top: .25rem; font-size: .75rem; opacity: .7; font-family: var(--ui); }
 .log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: .2rem .3rem .2rem 0; }
 .empty { margin: auto 0; align-items: flex-end; }

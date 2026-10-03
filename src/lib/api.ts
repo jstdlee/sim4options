@@ -17,7 +17,7 @@ export interface ClefOut { ok: boolean; model: string; ms: number; error?: strin
 export const api = {
   spar: (scenario: string, prompt: string, choices: Choice[], flash = false) => post<ClefOut>('/api/clef/spar', { scenario, prompt, choices, flash }),
   grade: (scenario: string, decision: string, rationale: string) => post<ClefOut>('/api/clef/grade', { scenario, decision, rationale }),
-  explain: (b: Record<string, unknown>) => post<{ ok: boolean; text?: string; error?: string }>('/api/explain', b),
+  explain: (b: Record<string, unknown>, fresh = false) => post<{ ok: boolean; text?: string; error?: string; cached?: { similarity: number; exact: boolean } }>(`/api/explain${fresh ? '?fresh=1' : ''}`, b),
   attempt: (b: Record<string, unknown>) => post('/api/attempts', b).catch(() => null),
 }
 

@@ -1,7 +1,9 @@
 import { Hono } from 'hono'
 import { routeAgentRequest } from 'agents'
 import type { Env, Byok } from './env'
-import { chat, clef, TUTOR_SYSTEM } from './ai'
+import { chat, clef, modelName, TUTOR_SYSTEM } from './ai'
+import { lookup, store } from './cache'
+import { webSearch } from './search'
 import { isAuthed, isConfigured, login, logoutCookie } from './auth'
 export { TutorAgent } from './agent'
 
@@ -55,11 +57,26 @@ Short key: ${b.why}
 ${b.clef ? `Clef decision model probabilities: ${JSON.stringify(b.clef)}` : ''}
 Explain why the correct answer wins, why the learner's pick ${b.picked === b.correct ? 'is right' : 'falls short'}, and one way the answer would change if a variable changed.`
   try {
+    // Same step, same pick → same explanation: serve it from the cache unless a fresh one is asked for.
+    const fresh = c.req.query('fresh') === '1'
+    if (!fresh) {
+      const hit = await lookup(c.env, 'explain', user, 'explain')
+      if (hit) return c.json({ ok: true, text: hit.answer, cached: { similarity: hit.similarity, exact: hit.exact } })
+    }
     const text = await chat(c.env, [{ role: 'system', content: TUTOR_SYSTEM }, { role: 'user', content: user }], b.byok)
+    c.executionCtx.waitUntil(store(c.env, 'explain', user, 'explain', text, [], modelName(c.env, b.byok)).catch(() => {}))
     return c.json({ ok: true, text })
   } catch (e: any) {
     return c.json({ ok: false, error: String(e?.message ?? e) }, 502)
   }
+})
+
+/** Web search (signed-in): which provider answered, or why each one failed. */
+app.get('/api/websearch', async (c) => {
+  const q = c.req.query('q') ?? ''
+  if (!q.trim()) return c.json({ ok: false, error: 'Add ?q=…' }, 400)
+  const r = await webSearch(c.env, q)
+  return c.json({ ok: !!r?.results.length, ...r })
 })
 
 /** Progress */

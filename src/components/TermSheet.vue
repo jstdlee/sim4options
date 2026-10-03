@@ -34,7 +34,7 @@ const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') app.openTerm = nul
           <h3>Connected terms</h3>
           <div class="row"><button v-for="r in term.related" :key="r" class="chip" @click="app.openTerm = r">{{ TERM_MAP[r]?.name ?? r }}</button></div>
           <div class="row foot">
-            <RouterLink class="btn" :to="`/map?term=${term.id}`" @click="app.openTerm = null"><i class="fa-solid fa-diagram-project" aria-hidden="true" />See on the term map</RouterLink>
+            <button class="btn" @click="app.mapTerm = term.id; app.openTerm = null"><i class="fa-solid fa-diagram-project" aria-hidden="true" />See it on the knowledge map</button>
             <button class="btn" @click="askKon"><img class="ico" src="/fox/head.webp" alt="" />Ask Kon about it</button>
           </div>
         </template>
@@ -45,13 +45,22 @@ const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') app.openTerm = nul
 </template>
 
 <style scoped>
-.scrim { position: fixed; inset: 0; background: rgb(26 23 18 / .35); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: min(640px, 100%); max-height: 80vh; overflow: auto; background: var(--panel); border: 2px solid var(--edge); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom, 0px)); }
-.formula { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); border-radius: 8px; padding: .3rem .6rem; }
+/* Term card: a large centered card on desktop, a bottom sheet on phones. */
+.scrim { position: fixed; inset: 0; background: rgb(26 23 18 / .35); z-index: 50; display: grid; place-items: center; padding: 16px; }
+.sheet { width: min(720px, 100%); max-height: calc(100dvh - 32px); overflow: auto; background: var(--panel); border: 2px solid var(--edge); border-radius: 22px; box-shadow: 6px 6px 0 var(--edge); padding: 1.6rem 1.8rem 1.4rem; }
+.sheet h2 { font-size: clamp(1.6rem, 4vw, 2.3rem); margin: 0; }
+.sheet .read { font-size: 1.12rem; }
+.formula { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 1rem; color: var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); border-radius: 10px; padding: .5rem .8rem; }
 .tags { margin: .5rem 0 1rem; }
 .foot { margin-top: 1.2rem; }
-.sheet-enter-active, .sheet-leave-active { transition: opacity .18s; }
-.sheet-enter-active .sheet, .sheet-leave-active .sheet { transition: transform .22s ease; }
+.sheet-enter-active, .sheet-leave-active { transition: opacity .18s cubic-bezier(.23, 1, .32, 1); }
+.sheet-enter-active .sheet, .sheet-leave-active .sheet { transition: transform .2s cubic-bezier(.23, 1, .32, 1); }
 .sheet-enter-from, .sheet-leave-to { opacity: 0; }
-.sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: translateY(40px); }
+.sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: scale(.96); }
+@media (max-width: 600px) {
+  .scrim { place-items: end stretch; padding: 0; }
+  .sheet { width: 100%; max-height: 85dvh; border-radius: 20px 20px 0 0; border-bottom: 0; box-shadow: none; padding: 1.2rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom, 0px)); }
+  .sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: translateY(40px); }
+}
+@media (prefers-reduced-motion: reduce) { .sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: none; } }
 </style>

@@ -7,6 +7,14 @@ import { TERM_MAP } from '../lib/content'
 
 // Renders model output as Markdown. [[id]] / [[id|label]] become term buttons; the HTML is sanitized.
 const props = defineProps<{ text: string }>()
+
+// Links in model output (web sources) open in a new tab and never get access to this page.
+if (!(DOMPurify as any).__oqLinks) {
+  DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+    if (node.tagName === 'A' && node.getAttribute('href')) { node.setAttribute('target', '_blank'); node.setAttribute('rel', 'noopener noreferrer') }
+  })
+  ;(DOMPurify as any).__oqLinks = true
+}
 const app = useApp()
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)

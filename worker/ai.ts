@@ -50,7 +50,32 @@ function normalizeClef(raw: any): ClefResult['fields'] {
 const argmax = (p: Record<string, number>) => Object.entries(p).sort((a, b) => b[1] - a[1])[0]?.[0]
 
 // ───────────────────────── LLM (Workers AI default, BYOK via AI Gateway)
+/** Which model answers, for cache records and the "answered by" line. */
+export const modelName = (env: Env, byok?: Byok | null) =>
+  byok?.provider === 'openai-compatible' ? `compatible:${byok.model}` : byok?.key && byok.provider !== 'workers-ai' ? `${byok.provider}/${byok.model}` : byok?.provider === 'workers-ai' && byok.model ? byok.model : env.LLM_MODEL
+
+/** Base URL for an OpenAI-compatible server: https only, no credentials, path ends without a slash. */
+export function compatUrl(raw?: string) {
+  let u: URL
+  try { u = new URL(String(raw ?? '').trim()) } catch { throw new Error('Base URL is not a valid URL.') }
+  if (u.protocol !== 'https:') throw new Error('Base URL must start with https:// (the Worker cannot reach http or local addresses).')
+  if (u.username || u.password) throw new Error('Put the key in the API key field, not in the URL.')
+  return `${u.origin}${u.pathname.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')}/chat/completions`
+}
+
 export async function chat(env: Env, messages: ChatMsg[], byok?: Byok | null, maxTokens = 700): Promise<string> {
+  if (byok?.provider === 'openai-compatible') {
+    const res = await fetch(compatUrl(byok.baseUrl), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(byok.key ? { authorization: `Bearer ${byok.key}` } : {}) },
+      body: JSON.stringify({ model: byok.model, messages, max_tokens: maxTokens }),
+    })
+    if (!res.ok) throw new Error(`OpenAI-compatible server ${res.status}: ${(await res.text()).slice(0, 300)}`)
+    const j: any = await res.json()
+    const text = j.choices?.[0]?.message?.content ?? ''
+    if (!text) throw new Error('The OpenAI-compatible server returned no text.')
+    return text
+  }
   if (byok?.key && byok.provider !== 'workers-ai') {
     const url = `https://gateway.ai.cloudflare.com/v1/${env.CF_ACCOUNT_ID}/${env.AI_GATEWAY_ID}/compat/chat/completions`
     const res = await fetch(url, {

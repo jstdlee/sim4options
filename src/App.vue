@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import TermSheet from './components/TermSheet.vue'
 import ChatFloat from './components/ChatFloat.vue'
 import LangPicker from './components/LangPicker.vue'
+import SearchPalette from './components/SearchPalette.vue'
+import MapModal from './components/MapModal.vue'
 import { useApp } from './stores/app'
 
 const app = useApp()
@@ -66,6 +68,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     <div ref="measure" class="links measure" aria-hidden="true"><span v-for="[to, label] in links" :key="to" class="nav">{{ label }}</span></div>
 
     <div ref="cluster" class="cluster" role="toolbar" aria-label="App">
+      <SearchPalette v-if="app.authed" />
       <LangPicker />
       <RouterLink v-if="app.authed" to="/settings" class="icon-btn" aria-label="Settings" title="Settings"><i class="fa-solid fa-gear" /></RouterLink>
       <button v-if="app.authed && collapsed" ref="menuBtn" class="icon-btn" aria-label="Open menu" title="Menu"
@@ -91,6 +94,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   <!-- Each page mounts fresh (keyed by URL). Google Translate replaces text nodes, so patching old
        nodes would leave the next question untranslated or stale. -->
   <main><RouterView v-slot="{ Component, route: r }"><component :is="Component" :key="r.fullPath" /></RouterView></main>
+  <MapModal />
   <TermSheet />
   <ChatFloat v-if="app.authed" />
 </template>

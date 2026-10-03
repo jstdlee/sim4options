@@ -13,13 +13,22 @@ const hints: Record<ByokCfg['provider'], string> = {
   openai: 'e.g. gpt-5.1 — your key is sent per request through AI Gateway, never stored on the server.',
   anthropic: 'e.g. claude-sonnet-4-6',
   'google-ai-studio': 'e.g. gemini-2.5-flash',
+  'openai-compatible': 'Any server that speaks the OpenAI chat API (OpenRouter, Groq, Together, DeepSeek, your own vLLM behind HTTPS…). Enter the model name the server expects.',
 }
 async function signOut() {
   await fetch('/api/logout', { method: 'POST' }).catch(() => {})
   app.authed = false
   router.replace('/login')
 }
-function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (saved.value = false), 1800) }
+const err = ref('')
+function save() {
+  err.value = ''
+  if (f.provider === 'openai-compatible') {
+    try { if (new URL(f.baseUrl ?? '').protocol !== 'https:') throw 0 } catch { err.value = 'Enter a base URL that starts with https:// — the Cloudflare Worker cannot reach http or local addresses.'; return }
+    if (!f.model.trim()) { err.value = 'Enter the model name the server expects.'; return }
+  }
+  app.setByok({ ...f }); saved.value = true; setTimeout(() => (saved.value = false), 1800)
+}
 </script>
 
 <template>
@@ -30,11 +39,13 @@ function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (s
       <p class="muted">Explanations and the tutor use Workers AI by default. Clef decisions always run on Workers AI. Bring your own key to use another provider.</p>
       <label>Provider<select v-model="f.provider">
         <option value="workers-ai">Cloudflare Workers AI</option><option value="openai">OpenAI</option>
-        <option value="anthropic">Anthropic</option><option value="google-ai-studio">Google AI Studio</option></select></label>
+        <option value="anthropic">Anthropic</option><option value="google-ai-studio">Google AI Studio</option>
+        <option value="openai-compatible">OpenAI-compatible API (custom URL)</option></select></label>
+      <label v-if="f.provider === 'openai-compatible'">Base URL<input id="byok-base" v-model="f.baseUrl" type="url" inputmode="url" spellcheck="false" placeholder="https://api.example.com/v1" /></label>
       <label>Model<input v-model="f.model" :placeholder="f.provider === 'workers-ai' ? '@cf/moonshotai/kimi-k2.6' : 'model name'" /></label>
       <p class="muted small">{{ hints[f.provider] }}</p>
-      <label v-if="f.provider !== 'workers-ai'">API key<input v-model="f.key" type="password" autocomplete="off" placeholder="Stored only in this browser" /></label>
-      <div class="row"><button class="btn primary" @click="save">Save model settings</button><FoxSticker v-if="saved" pose="thumbs" :size="48" say="Saved!" /></div>
+      <label v-if="f.provider !== 'workers-ai'">API key{{ f.provider === 'openai-compatible' ? ' (if the server needs one)' : '' }}<input v-model="f.key" type="password" autocomplete="off" placeholder="Stored only in this browser" /></label>
+      <div class="row"><button class="btn primary" @click="save">Save model settings</button><FoxSticker v-if="saved" pose="thumbs" :size="48" say="Saved!" /><span v-if="err" class="err" role="alert">{{ err }}</span></div>
     </section>
     <section class="surface box">
       <h2>Progress</h2>
@@ -54,4 +65,5 @@ function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (s
 .box { margin: 1rem 0; max-width: 560px; }
 label { display: grid; gap: .25rem; margin-bottom: .8rem; }
 .small { font-size: .85rem; }
+.err { color: var(--put); font-weight: 700; }
 </style>

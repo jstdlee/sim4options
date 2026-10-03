@@ -105,4 +105,10 @@ const MOMENTS_BASE: Moment[] = [
 ]
 
 import { MOMENTS_MORE } from './moments_more'
-export const MOMENTS: Moment[] = [...MOMENTS_BASE, ...MOMENTS_MORE]
+import { MOMENTS_B1 } from './moments_b1'
+import { MOMENTS_B2 } from './moments_b2'
+import { MOMENTS_B3 } from './moments_b3'
+import { MOMENTS_B4 } from './moments_b4'
+import { MOMENTS_B5 } from './moments_b5'
+import { MOMENTS_B6 } from './moments_b6'
+export const MOMENTS: Moment[] = [...MOMENTS_BASE, ...MOMENTS_MORE, ...MOMENTS_B1, ...MOMENTS_B2, ...MOMENTS_B3, ...MOMENTS_B4, ...MOMENTS_B5, ...MOMENTS_B6]

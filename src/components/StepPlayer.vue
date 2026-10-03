@@ -17,6 +17,7 @@ const idx = ref(0)
 const picks = ref<Record<number, string>>({})
 const clefOut = ref<Record<number, ClefOut | null>>({})
 const explain = ref<Record<number, string>>({})
+const explainCached = ref<Record<number, boolean>>({})
 const busy = ref<string | null>(null)
 const note = ref('')
 const grade = ref<ClefOut | null>(null)
@@ -73,15 +74,16 @@ async function askClef() {
   clefOut.value[idx.value] = await api.spar(plain(props.scenario), plain(step.value.prompt), step.value.choices).catch(() => null)
   busy.value = null
 }
-async function askExplain() {
+async function askExplain(fresh = false) {
   busy.value = 'ai'
   const c = clefOut.value[idx.value]
   const r = await api.explain({
     scenario: plain(props.scenario), prompt: plain(step.value.prompt), choices: step.value.choices.map((c) => c.label),
     correct: label(step.value.answer), picked: label(picked.value!), why: plain(step.value.why),
     clef: c?.ok ? c.fields.pick?.probs : undefined, byok: app.byokPayload,
-  }).catch((e): { ok: boolean; text?: string; error?: string } => ({ ok: false, error: String(e) }))
+  }, fresh).catch((e): { ok: boolean; text?: string; error?: string; cached?: unknown } => ({ ok: false, error: String(e) }))
   explain.value[idx.value] = r.ok ? r.text ?? '' : `Explanation unavailable: ${r.error}`
+  explainCached.value[idx.value] = !!r.cached
   busy.value = null
 }
 async function gradeIt() {
@@ -126,14 +128,16 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
       <div class="actions">
         <button class="btn" :disabled="busy === 'clef'" @click="askClef">
           <i class="fa-solid fa-scale-balanced" aria-hidden="true" />{{ busy === 'clef' ? 'Asking Clef…' : 'Compare with Clef' }}</button>
-        <button class="btn" :disabled="busy === 'ai'" @click="askExplain">
+        <button class="btn" :disabled="busy === 'ai'" @click="askExplain()">
           <i class="fa-solid fa-book-open" aria-hidden="true" />{{ busy === 'ai' ? 'Explaining…' : 'Explain in depth' }}</button>
         <button v-if="idx < steps.length - 1" class="btn primary" @click="idx++">
           Next step<i class="fa-solid fa-arrow-right" aria-hidden="true" /></button>
       </div>
       <ClefBar v-if="clefOut[idx]?.ok" :probs="clefOut[idx]!.fields.pick?.probs" :choices="step.choices" :answer="step.answer" :ms="clefOut[idx]!.ms" :model="clefOut[idx]!.model" />
       <p v-else-if="clefOut[idx]" class="muted">Clef is unavailable: {{ clefOut[idx]!.error }}</p>
-      <div v-if="explain[idx]" class="explain read"><MdText :text="explain[idx]" /></div>
+      <div v-if="explain[idx]" class="explain read"><MdText :text="explain[idx]" />
+        <p v-if="explainCached[idx]" class="memo"><i class="fa-solid fa-bookmark" aria-hidden="true" /> From Kon’s notes ·
+          <button class="linkish" :disabled="busy === 'ai'" @click="askExplain(true)">Explain again fresh</button></p></div>
     </div>
 
     <section v-if="finished && rationale" class="rationale">
@@ -189,6 +193,9 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
 .actions { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); }
 .actions .btn { justify-content: center; }
 .explain { padding: .9rem 1.1rem; border: 2px solid var(--edge); border-radius: 14px; background: var(--ink); }
+.memo { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: .6rem 0 0; font-family: var(--ui); font-size: .78rem; color: var(--muted); }
+.memo i { color: var(--teal); }
+.linkish { border: 0; background: none; padding: 0; color: var(--teal); font-weight: 800; text-decoration: underline; }
 .rationale { display: grid; gap: .6rem; padding-top: 1rem; border-top: 2px dashed var(--line); }
 .rationale h3, .rationale p { margin: 0; }
 

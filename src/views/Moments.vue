@@ -5,9 +5,16 @@ import { computed, ref } from 'vue'
 import { MOMENTS } from '../lib/content'
 import { useApp } from '../stores/app'
 const app = useApp()
-const tickers = Array.from(new Set(MOMENTS.map((m) => m.ticker)))
-const tk = ref<string | null>(null)
-const list = computed(() => MOMENTS.filter((m) => !tk.value || m.ticker === tk.value))
+// Themes, most common first; search matches ticker, title, date, summary and tags.
+const TAGS = Object.entries(MOMENTS.flatMap((m) => m.tags).reduce<Record<string, number>>((a, t) => ((a[t] = (a[t] ?? 0) + 1), a), {}))
+  .sort((a, b) => b[1] - a[1]).slice(0, 16).map(([t]) => t)
+const tag = ref<string | null>(null)
+const q = ref('')
+const list = computed(() => {
+  const words = q.value.toLowerCase().split(/\s+/).filter(Boolean)
+  return MOMENTS.filter((m) => (!tag.value || m.tags.includes(tag.value)) &&
+    words.every((w) => `${m.ticker} ${m.title} ${m.date} ${m.summary} ${m.tags.join(' ')}`.toLowerCase().includes(w)))
+})
 const score = (id: string) => app.results[`moment:${id}`]
 const passed = computed(() => MOMENTS.filter((m) => { const r = score(m.id); return r && r.correct / r.total >= 2 / 3 }).length)
 
@@ -22,8 +29,10 @@ usePageContext(() => ({
     <header class="phead"><h1>Market moments</h1><FoxSticker pose="surprised" :size="96" /></header>
     <p class="read muted">Trade through real events checkpoint by checkpoint. Prices are approximate reconstructions for teaching. Pass a moment with 2 of 3 decisions right; pass {{ Math.ceil(MOMENTS.length * 0.7) }} to complete the final test.</p>
     <p><strong>{{ passed }} / {{ MOMENTS.length }}</strong> passed</p>
-    <div class="row filters"><button class="chip" :class="{ on: !tk }" @click="tk = null">All</button>
-      <button v-for="t in tickers" :key="t" class="chip" :class="{ on: tk === t }" @click="tk = t">{{ t }}</button></div>
+    <input id="moment-search" v-model="q" type="search" class="search" placeholder="Search a ticker, event or year (NVDA, crash, 2020…)" aria-label="Search moments" />
+    <div class="row filters"><button class="chip" :class="{ on: !tag }" @click="tag = null">All {{ MOMENTS.length }}</button>
+      <button v-for="t in TAGS" :key="t" class="chip" :class="{ on: tag === t }" @click="tag = tag === t ? null : t">{{ t }}</button></div>
+    <p class="muted count">{{ list.length }} shown</p>
     <div class="list">
       <RouterLink v-for="m in list" :key="m.id" :to="`/moments/${m.id}/0`" class="moment">
         <span class="tk">{{ m.ticker }}</span>
@@ -31,11 +40,14 @@ usePageContext(() => ({
         <span v-if="score(m.id)" class="chip" :class="{ on: score(m.id).correct / score(m.id).total >= 2 / 3 }">{{ score(m.id).correct }}/{{ score(m.id).total }}</span>
       </RouterLink>
     </div>
+    <FoxSticker v-if="!list.length" pose="sleep" :size="120" say="No moment matches. Try another word or theme." />
   </div>
 </template>
 
 <style scoped>
-.filters { margin: .5rem 0 1rem; }
+.search { margin: .4rem 0 .6rem; max-width: 520px; }
+.filters { margin: 0 0 .4rem; }
+.count { font-size: .85rem; margin: 0 0 .6rem; }
 .list { display: grid; gap: .6rem; }
 .moment { display: flex; gap: 1rem; align-items: center; text-decoration: none; color: var(--paper); padding: 1rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; box-shadow: var(--shadow); transition: transform .08s ease, box-shadow .08s ease; }
 .moment:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--edge); background: #fff6dc; }

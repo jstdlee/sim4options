@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { load, save } from '../lib/storage'
 
-export interface ByokCfg { provider: 'workers-ai' | 'openai' | 'anthropic' | 'google-ai-studio'; model: string; key: string }
+export interface ByokCfg { provider: 'workers-ai' | 'openai' | 'anthropic' | 'google-ai-studio' | 'openai-compatible'; model: string; key: string; baseUrl?: string }
 type Result = { correct: number; total: number; at: number }
 
 /** What Kon sees: a short label for the chip and the full text sent with each message. */
@@ -20,6 +20,8 @@ export const useApp = defineStore('app', {
     termStats: load<Record<string, { seen: number; correct: number }>>('oq.terms', {}),
     byok: load<ByokCfg>('oq.byok', { provider: 'workers-ai', model: '', key: '' }),
     openTerm: null as string | null,
+    /** Term at the center of the knowledge-map modal. */
+    mapTerm: null as string | null,
     chatOpen: false,
     /** Active page language (Google Translate); 'en' = original. */
     lang: 'en',
@@ -33,7 +35,7 @@ export const useApp = defineStore('app', {
   getters: {
     levelProgress: (s) => (ids: string[]) => ids.filter((id) => s.results[id]).length,
     mastery: (s) => (term: string) => { const t = s.termStats[term]; return t ? t.correct / Math.max(t.seen, 1) : null },
-    byokPayload: (s) => (s.byok.key || s.byok.provider === 'workers-ai' && s.byok.model ? { ...s.byok } : null),
+    byokPayload: (s) => (s.byok.provider === 'openai-compatible' ? (s.byok.baseUrl && s.byok.model ? { ...s.byok } : null) : s.byok.key || s.byok.provider === 'workers-ai' && s.byok.model ? { ...s.byok } : null),
   },
   actions: {
     record(qid: string, correct: number, total: number, terms: string[]) {

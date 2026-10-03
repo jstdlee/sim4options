@@ -22,6 +22,29 @@ const app = useApp()
 app.lang = current.value
 const route = useRoute()
 
+// Fonts per script. Latin languages and Japanese are covered by the base fonts (index.html).
+const FONTS: Record<string, { families: string; display: string; ui: string; read: string }> = {
+  'zh-CN': { families: 'family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;700;900', display: "'ZCOOL KuaiLe'", ui: "'Noto Sans SC'", read: "'Noto Sans SC'" },
+  'zh-TW': { families: 'family=Noto+Sans+TC:wght@400;700;900', display: "'Noto Sans TC'", ui: "'Noto Sans TC'", read: "'Noto Sans TC'" },
+  ko: { families: 'family=Jua&family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;700', display: "'Jua'", ui: "'Gowun Dodum'", read: "'Noto Sans KR'" },
+  th: { families: 'family=Kanit:wght@600&family=Noto+Sans+Thai:wght@400;700', display: "'Kanit'", ui: "'Noto Sans Thai'", read: "'Noto Sans Thai'" },
+  hi: { families: 'family=Baloo+2:wght@700;800&family=Noto+Sans+Devanagari:wght@400;700', display: "'Baloo 2'", ui: "'Noto Sans Devanagari'", read: "'Noto Sans Devanagari'" },
+  ar: { families: 'family=Baloo+Bhaijaan+2:wght@700;800&family=Noto+Sans+Arabic:wght@400;700', display: "'Baloo Bhaijaan 2'", ui: "'Noto Sans Arabic'", read: "'Noto Sans Arabic'" },
+  ru: { families: 'family=Rubik:wght@700;800&family=Nunito:wght@400;700;800', display: "'Rubik'", ui: "'Nunito'", read: "'Nunito'" },
+  vi: { families: 'family=Baloo+2:wght@700;800&family=Be+Vietnam+Pro:wght@400;700', display: "'Baloo 2'", ui: "'Be Vietnam Pro'", read: "'Be Vietnam Pro'" },
+}
+function applyFonts(code: string) {
+  const f = FONTS[code], root = document.documentElement.style
+  document.getElementById('lang-fonts')?.remove()
+  if (!f) { for (const v of ['--display', '--ui', '--read']) root.removeProperty(v); return }
+  const link = Object.assign(document.createElement('link'), { id: 'lang-fonts', rel: 'stylesheet', href: `https://fonts.googleapis.com/css2?${f.families}&display=swap` })
+  document.head.appendChild(link)
+  const tail = ", 'M PLUS Rounded 1c', system-ui, sans-serif"
+  root.setProperty('--display', f.display + tail)
+  root.setProperty('--ui', f.ui + tail)
+  root.setProperty('--read', f.read + tail)
+}
+
 const setCookie = (code: string) => { document.cookie = `googtrans=/en/${code}; path=/` }
 
 let loader: Promise<void> | null = null
@@ -77,6 +100,7 @@ async function pick(code: string) {
   current.value = code
   app.lang = code
   savePref('lang', code)
+  applyFonts(code)
   if (code === 'en') { clearCookie(); location.reload(); return }
   if (!loader) {
     // First switch away from English: the widget applies the cookie when it starts. Changing its
@@ -123,6 +147,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onDoc))
 
 onMounted(() => {
   if (current.value === 'en') { clearCookie(); return }
+  applyFonts(current.value)
   setCookie(current.value)
   load().then(() => ensure(current.value), () => {})
 })
