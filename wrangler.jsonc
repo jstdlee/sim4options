@@ -24,7 +24,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TutorAgent"] }],
   "vars": {
-    "LLM_MODEL": "@cf/moonshotai/kimi-k2.6",
+    "LLM_MODEL": "@cf/deepseek-ai/deepseek-v4-pro-0813",
     "CLEF_MODEL": "@cf/cloudflare/clef",
     "CLEF_FLASH_MODEL": "@cf/cloudflare/clef-flash",
     "AI_GATEWAY_ID": "sim4options",

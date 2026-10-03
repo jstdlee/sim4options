@@ -24,6 +24,17 @@ export interface Byok {
   key: string
   /** openai-compatible only: base URL that serves /chat/completions, e.g. https://api.example.com/v1 */
   baseUrl?: string
+  /** Reasoning: off (default, fast) | low | high. */
+  thinking?: 'off' | 'low' | 'high'
+}
+
+/** Per-learner web search options from Settings (sent with each tutor question). */
+export interface SearchOpts {
+  mode?: 'auto' | 'always' | 'off'
+  cfProvider?: 'ceramic' | 'exa' | 'linkup'
+  exaKey?: string
+  numResults?: number
+  exaType?: 'auto' | 'fast' | 'neural' | 'keyword'
 }
 
 export type ChatMsg = { role: 'system' | 'user' | 'assistant'; content: string }

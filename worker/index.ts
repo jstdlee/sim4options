@@ -1,9 +1,10 @@
 import { Hono } from 'hono'
 import { routeAgentRequest } from 'agents'
-import type { Env, Byok } from './env'
+import type { Env, Byok, SearchOpts } from './env'
 import { chat, clef, modelName, TUTOR_SYSTEM } from './ai'
 import { lookup, store } from './cache'
 import { webSearch } from './search'
+import { listModels } from './models'
 import { isAuthed, isConfigured, login, logoutCookie } from './auth'
 export { TutorAgent } from './agent'
 
@@ -71,12 +72,26 @@ Explain why the correct answer wins, why the learner's pick ${b.picked === b.cor
   }
 })
 
-/** Web search (signed-in): which provider answered, or why each one failed. */
-app.get('/api/websearch', async (c) => {
-  const q = c.req.query('q') ?? ''
-  if (!q.trim()) return c.json({ ok: false, error: 'Add ?q=…' }, 400)
-  const r = await webSearch(c.env, q)
+/** Web search (signed-in): which provider answered, or why each one failed. Settings uses it as "Test search". */
+app.post('/api/websearch', async (c) => {
+  const b = await c.req.json<{ q?: string; search?: SearchOpts }>().catch(() => ({} as { q?: string; search?: SearchOpts }))
+  const q = String(b.q ?? '').trim()
+  if (!q) return c.json({ ok: false, error: 'Enter a search query.' }, 400)
+  const r = await webSearch(c.env, q, b.search ?? {})
   return c.json({ ok: !!r?.results.length, ...r })
+})
+
+/** What search the server offers by default (no search is run). */
+app.get('/api/search/config', (c) => c.json({
+  ok: true, default: 'cloudflare-web-search', cfProvider: c.env.SEARCH_PROVIDER || 'ceramic', gateway: c.env.AI_GATEWAY_ID,
+  exaServerKey: !!c.env.EXA_API_KEY, defaultModel: c.env.LLM_MODEL,
+}))
+
+/** Model list from the learner's provider (key used once, never stored). */
+app.post('/api/models', async (c) => {
+  const b = await c.req.json<Pick<Byok, 'provider' | 'key' | 'baseUrl'>>()
+  try { return c.json({ ok: true, models: await listModels(c.env, b) }) }
+  catch (e: any) { return c.json({ ok: false, error: String(e?.message ?? e) }, 400) }
 })
 
 /** Progress */

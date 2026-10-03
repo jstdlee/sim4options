@@ -51,7 +51,8 @@ const argmax = (p: Record<string, number>) => Object.entries(p).sort((a, b) => b
 
 // ───────────────────────── LLM (Workers AI default, BYOK via AI Gateway)
 /** Which model answers, for cache records and the "answered by" line. */
-export const modelName = (env: Env, byok?: Byok | null) =>
+export const modelName = (env: Env, byok?: Byok | null) => modelBase(env, byok) + (byok?.thinking && byok.thinking !== 'off' ? ` (thinking ${byok.thinking})` : '')
+const modelBase = (env: Env, byok?: Byok | null) =>
   byok?.provider === 'openai-compatible' ? `compatible:${byok.model}` : byok?.key && byok.provider !== 'workers-ai' ? `${byok.provider}/${byok.model}` : byok?.provider === 'workers-ai' && byok.model ? byok.model : env.LLM_MODEL
 
 /** Base URL for an OpenAI-compatible server: https only, no credentials, path ends without a slash. */
@@ -63,12 +64,24 @@ export function compatUrl(raw?: string) {
   return `${u.origin}${u.pathname.replace(/\/+$/, '').replace(/\/chat\/completions$/, '')}/chat/completions`
 }
 
+/** Thinking settings for a Workers AI model family. Unknown families get nothing (strict input schemas). */
+function workersThinking(model: string, t: 'off' | 'low' | 'high') {
+  if (/deepseek-v4/i.test(model)) return { chat_template_kwargs: { enable_thinking: t !== 'off' }, reasoning_effort: t === 'off' ? 'none' : t }
+  if (/kimi/i.test(model)) return { chat_template_kwargs: { thinking: t !== 'off' } }
+  // Not verified per model: chat() retries without these if the model rejects them.
+  if (/qwen3|glm-[45]/i.test(model)) return { chat_template_kwargs: { enable_thinking: t !== 'off' } }
+  return {}
+}
+
 export async function chat(env: Env, messages: ChatMsg[], byok?: Byok | null, maxTokens = 700): Promise<string> {
+  const thinking = byok?.thinking ?? 'off'
+  // Reasoning spends tokens before the answer; give it room.
+  if (thinking !== 'off') maxTokens = Math.max(maxTokens, thinking === 'high' ? 6000 : 2500)
   if (byok?.provider === 'openai-compatible') {
     const res = await fetch(compatUrl(byok.baseUrl), {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(byok.key ? { authorization: `Bearer ${byok.key}` } : {}) },
-      body: JSON.stringify({ model: byok.model, messages, max_tokens: maxTokens }),
+      body: JSON.stringify({ model: byok.model, messages, max_tokens: maxTokens, ...(thinking !== 'off' ? { reasoning_effort: thinking } : {}) }),
     })
     if (!res.ok) throw new Error(`OpenAI-compatible server ${res.status}: ${(await res.text()).slice(0, 300)}`)
     const j: any = await res.json()
@@ -81,16 +94,19 @@ export async function chat(env: Env, messages: ChatMsg[], byok?: Byok | null, ma
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${byok.key}` },
-      body: JSON.stringify({ model: `${byok.provider}/${byok.model}`, messages, max_tokens: maxTokens }),
+      body: JSON.stringify({ model: `${byok.provider}/${byok.model}`, messages, max_tokens: maxTokens, ...(thinking !== 'off' && byok.provider === 'openai' ? { reasoning_effort: thinking } : {}) }),
     })
     if (!res.ok) throw new Error(`BYOK ${byok.provider} ${res.status}: ${(await res.text()).slice(0, 300)}`)
     const j: any = await res.json()
     return j.choices?.[0]?.message?.content ?? ''
   }
   const model = byok?.provider === 'workers-ai' && byok.model ? byok.model : env.LLM_MODEL
-  // Kimi K2.x reasons by default and can spend all of max_tokens before it answers; turn thinking off.
-  const extra = /kimi/i.test(model) ? { chat_template_kwargs: { thinking: false } } : {}
-  const out: any = await env.AI.run(model as any, { messages, max_tokens: maxTokens, ...extra } as any, { gateway: { id: env.AI_GATEWAY_ID } } as any)
+  // Reasoning models think by default and can spend all of max_tokens first; the default here is off.
+  const extra = workersThinking(model, thinking)
+  const run = (x: object) => env.AI.run(model as any, { messages, max_tokens: maxTokens, ...x } as any, { gateway: { id: env.AI_GATEWAY_ID } } as any)
+  let out: any
+  try { out = await run(extra) }
+  catch (e) { if (!Object.keys(extra).length) throw e; out = await run({}) } // model rejected the thinking options
   const text = out?.response || out?.choices?.[0]?.message?.content || (typeof out === 'string' ? out : '')
   if (!text) throw new Error(`${model} returned no text (finish_reason: ${out?.choices?.[0]?.finish_reason ?? 'unknown'})`)
   return text

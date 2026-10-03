@@ -1,5 +1,5 @@
 import { Agent, type Connection, type WSMessage } from 'agents'
-import type { Env, Byok, ChatMsg } from './env'
+import type { Env, Byok, ChatMsg, SearchOpts } from './env'
 import { chat, clef, modelName, TUTOR_SYSTEM } from './ai'
 import { lookup, store } from './cache'
 import { asContext, webSearch } from './search'
@@ -46,13 +46,15 @@ export class TutorAgent extends Agent<Env, TutorState> {
         web: { type: 'noul', instructions: 'Does answering need recent or real-world facts (current prices, news, dates, company events, rules that change) that a textbook would not contain?' },
       }, true)
       const pWeb = Number(route.fields.web?.probs?.yes ?? 0)
+      const search = (data.search ?? {}) as SearchOpts
+      const wantWeb = search.mode === 'always' || (search.mode !== 'off' && pWeb >= 0.5)
 
       // 3. Web search when needed: Cloudflare Web Search first, Exa as backup.
       let sources: { title: string; url: string }[] = []
       let searchBlock = ''
-      if (pWeb >= 0.5) {
+      if (wantWeb) {
         status('Searching the web…')
-        const found = await webSearch(this.env, question)
+        const found = await webSearch(this.env, question, search)
         if (found?.results.length) {
           sources = found.results.map((r) => ({ title: r.title, url: r.url }))
           searchBlock = asContext(found)

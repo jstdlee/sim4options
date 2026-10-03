@@ -64,7 +64,7 @@ function send(q?: string, fresh = false, ctxText?: string) {
   pending.value = true
   statusText.value = fresh ? 'Asking again…' : 'Checking Kon’s notes…'
   lastAsk = { q: text, ctx: context }
-  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context, byok: app.byokPayload, fresh }))
+  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context, byok: app.byokPayload, search: app.searchPayload, fresh }))
   if (!q) input.value = ''
   scroll()
 }
