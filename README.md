@@ -9,6 +9,19 @@ and Workers AI with the **Clef** decision models. Bring-your-own-key models go t
 
 > Education only. Not financial advice. Historical prices in the market moments are approximate reconstructions.
 
+## Gallery
+
+| | |
+|---|---|
+| ![Journey: the home banner with Kon and the seven levels](docs/screenshots/journey.webp) | ![A question card: Kon reacts to a wrong pick, Clef shows its probabilities](docs/screenshots/question.webp) |
+| **Journey** — seven levels, 420 questions | **Questions** — Kon reacts; Clef scores every choice |
+| ![A market moment checkpoint with its situation brief](docs/screenshots/moment.webp) | ![The knowledge-map modal centered on Iron condor](docs/screenshots/map.webp) |
+| **Market moments** — decide from the brief, story revealed at the end | **Knowledge map** — explore links, then open the card |
+| ![Ask Kon: the tutor sees the current question as context](docs/screenshots/kon.webp) | ![Search everything with Ctrl+K](docs/screenshots/search.webp) |
+| **Ask Kon** — the tutor sees what is on screen | **Search** — terms, questions, moments, structures |
+
+<p align="center"><img src="docs/screenshots/phone.webp" alt="Options Quest on a phone" width="260" /><br /><sub>On a phone: the nav moves into a drawer.</sub></p>
+
 ## What is inside
 
 - **Journey:** 420 questions in 7 levels (72 hand-written, the rest generated and priced with Black–Scholes).
