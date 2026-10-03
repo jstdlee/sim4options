@@ -32,6 +32,10 @@ async function submit() {
 
 <template>
   <div class="wrap login">
+    <div class="kon" aria-hidden="true">
+      <img src="/fox/sign.webp" alt="" />
+      <span class="board">Members<br />only!</span>
+    </div>
     <form class="surface box" @submit.prevent="submit">
       <h1>Sign in</h1>
       <p class="muted">Options Quest is private. Enter the access token you were given.</p>
@@ -44,8 +48,13 @@ async function submit() {
 </template>
 
 <style scoped>
-.login { display: grid; place-items: start center; padding-top: 3rem; }
-.box { width: min(420px, 100%); display: grid; gap: .6rem; }
+.login { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2rem 3rem; padding-top: 3rem; }
+.kon { position: relative; width: 190px; flex: none; transform: rotate(-3deg); }
+.kon img { width: 100%; display: block; filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(3px 4px 0 rgb(26 23 18 / .18)); }
+/* Text sits inside the white board of sign.webp (board spans about 4–95 % wide, 3–35 % high). */
+.board { position: absolute; left: 10%; right: 10%; top: 7%; height: 24%; display: grid; place-items: center; text-align: center; font-family: var(--display); font-size: 1.35rem; line-height: 1.05; color: var(--fox); transform: rotate(-2deg); }
+.box { width: min(400px, 100%); display: grid; gap: .6rem; }
 h1 { font-size: 1.8rem; }
-.err { color: var(--put); margin: 0; }
+label { font-weight: 800; }
+.err { color: var(--put); margin: 0; font-weight: 700; }
 </style>

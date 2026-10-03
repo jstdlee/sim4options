@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref } from 'vue'
 import { MOMENTS } from '../lib/content'
 import { useApp } from '../stores/app'
@@ -12,7 +13,7 @@ const passed = computed(() => MOMENTS.filter((m) => { const r = score(m.id); ret
 
 <template>
   <div class="wrap">
-    <h1>Market moments</h1>
+    <header class="phead"><h1>Market moments</h1><FoxSticker pose="surprised" :size="96" /></header>
     <p class="read muted">Trade through real events checkpoint by checkpoint. Prices are approximate reconstructions for teaching. Pass a moment with 2 of 3 decisions right; pass {{ Math.ceil(MOMENTS.length * 0.7) }} to complete the final test.</p>
     <p><strong>{{ passed }} / {{ MOMENTS.length }}</strong> passed</p>
     <div class="row filters"><button class="chip" :class="{ on: !tk }" @click="tk = null">All</button>
@@ -30,9 +31,9 @@ const passed = computed(() => MOMENTS.filter((m) => { const r = score(m.id); ret
 <style scoped>
 .filters { margin: .5rem 0 1rem; }
 .list { display: grid; gap: .6rem; }
-.moment { display: flex; gap: 1rem; align-items: center; text-decoration: none; padding: 1rem; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
-.moment:hover { border-color: var(--muted); }
+.moment { display: flex; gap: 1rem; align-items: center; text-decoration: none; color: var(--paper); padding: 1rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; box-shadow: var(--shadow); transition: transform .08s ease, box-shadow .08s ease; }
+.moment:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--edge); background: #fff6dc; }
 .moment h2 { font-size: 1.1rem; margin: 0; }
 .moment p { margin: .2rem 0 0; }
-.tk { font-weight: 800; font-size: 1.1rem; min-width: 3.6rem; color: var(--vol); }
+.tk { font-family: var(--display); font-size: .95rem; min-width: 4.2rem; text-align: center; padding: .25rem .4rem; border: 2px solid var(--edge); border-radius: 8px; background: var(--pop); }
 </style>

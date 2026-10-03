@@ -1,0 +1,240 @@
+<title>Options Quest Style Picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&family=Kiwi+Maru:wght@500&family=Zen+Maru+Gothic:wght@500;700&family=Dela+Gothic+One&family=M+PLUS+1p:wght@400;700;800&family=RocknRoll+One&family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
+<style>
+:root {
+  --bg: #f6f4f8; --panel: #ffffff; --ink: #1e1b26; --muted: #6b6578; --line: #ddd8e4; --focus: #7a5cff;
+  --frame: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #15131b; --panel: #1e1b26; --ink: #eeeaf4; --muted: #a29bb0; --line: #2c2836; --focus: #b6a4ff; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #15131b; --panel: #1e1b26; --ink: #eeeaf4; --muted: #a29bb0; --line: #2c2836; --focus: #b6a4ff; color-scheme: dark; }
+
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--frame); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 32px 16px 64px; display: grid; gap: 40px; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+.intro { display: grid; gap: 10px; max-width: 68ch; }
+.intro .kicker { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.intro h1 { margin: 0; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; text-wrap: balance; }
+.intro p { margin: 0; color: var(--muted); }
+.jump { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.jump a { text-decoration: none; color: var(--ink); border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 6px 14px; font-weight: 700; font-size: 14px; }
+.jump a:hover { border-color: var(--muted); }
+
+/* One direction = one specimen. Its colors are fixed: it shows how the app itself would look. */
+.dir { display: grid; gap: 14px; scroll-margin-top: 16px; }
+.dir-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.dir-head .letter { font-size: 28px; font-weight: 700; line-height: 1; }
+.dir-head h2 { margin: 0; font-size: 22px; }
+.dir-head .tag { color: var(--muted); font-size: 14px; }
+.specimen { background: var(--s-bg); color: var(--s-ink); border-radius: 18px; overflow: hidden; border: 1px solid var(--line); }
+
+.hero { position: relative; aspect-ratio: 16 / 9; max-width: 100%; background: var(--s-bg); }
+.hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero .copy { position: absolute; left: 4.5%; top: 50%; transform: translateY(-50%); width: 40%; display: grid; gap: 10px; }
+.hero h3 { margin: 0; font-family: var(--s-display); font-size: clamp(18px, 3.4vw, 40px); line-height: 1.12; font-weight: var(--s-display-wt, 400); text-wrap: balance; }
+.hero .sub { font-family: var(--s-body); font-size: clamp(11px, 1.3vw, 15px); opacity: .85; margin: 0; }
+.hero .cta { justify-self: start; font-family: var(--s-body); font-weight: 700; font-size: clamp(11px, 1.3vw, 15px); padding: .5em 1.1em; border: var(--s-border); border-radius: var(--s-radius); background: var(--s-accent); color: var(--s-on-accent); box-shadow: var(--s-shadow); }
+
+.below { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 20px; padding: 20px; align-items: start; }
+.mascot { display: grid; gap: 10px; }
+.mascot img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 14px; display: block; }
+.swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.swatches span { aspect-ratio: 1; border-radius: 8px; border: 1px solid rgba(0,0,0,.12); }
+.fontnote { font-family: var(--s-body); font-size: 12px; opacity: .8; margin: 0; }
+
+/* Mini app UI in the direction's tokens */
+.ui { display: grid; gap: 12px; font-family: var(--s-body); min-width: 0; }
+.nav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; background: var(--s-bar); border-radius: var(--s-radius); border: var(--s-border); }
+.nav b { font-family: var(--s-display); font-weight: var(--s-display-wt, 400); margin-right: 6px; }
+.nav i { font-style: normal; font-size: 13px; padding: 2px 9px; border-radius: 999px; opacity: .8; }
+.nav i.on { background: var(--s-accent); color: var(--s-on-accent); opacity: 1; }
+.nav .lang { margin-left: auto; font-size: 12px; border: var(--s-border-soft); border-radius: 8px; padding: 2px 8px; opacity: .85; }
+.card { background: var(--s-card); border: var(--s-border); border-radius: var(--s-radius); box-shadow: var(--s-shadow); padding: 14px 16px; display: grid; gap: 8px; }
+.level { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+.level .n { font-family: var(--s-display); font-size: 28px; color: var(--s-num); line-height: 1; }
+.level h4 { margin: 0; font-size: 15px; }
+.level p { margin: 0; font-size: 12px; opacity: .75; }
+.level .go { font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: var(--s-radius); background: var(--s-accent); color: var(--s-on-accent); border: var(--s-border); white-space: nowrap; }
+.bar { height: 6px; border-radius: 99px; background: var(--s-track); grid-column: 2 / 3; }
+.bar > span { display: block; height: 100%; width: 7%; border-radius: inherit; background: var(--s-call); }
+.q h4 { margin: 0; font-size: 15px; }
+.q .term { color: var(--s-term); text-decoration: underline dotted; text-underline-offset: 3px; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.choice { padding: 9px 12px; border-radius: var(--s-radius); border: var(--s-border-soft); font-size: 13px; background: var(--s-choice); }
+.choice.right { border-color: var(--s-call); box-shadow: 0 0 0 2px var(--s-call) inset; }
+.verdict { font-size: 13px; color: var(--s-call-text); font-weight: 700; margin: 0; }
+.clef { display: grid; grid-template-columns: 52px 1fr 40px; gap: 8px; align-items: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.clef .t { height: 8px; border-radius: 99px; background: var(--s-track); }
+.clef .t span { display: block; height: 100%; border-radius: inherit; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12px; padding: 2px 10px; border-radius: 999px; border: var(--s-border-soft); }
+.notes { margin: 0; padding-left: 18px; color: var(--muted); font-size: 14px; display: grid; gap: 2px; }
+.notes strong { color: var(--ink); }
+
+/* A · Pastel shoujo */
+.a { --s-bg: #fff6ef; --s-ink: #5b4a6b; --s-card: #ffffff; --s-bar: #ffeef3; --s-choice: #fffafc;
+  --s-accent: #ff8fb1; --s-on-accent: #ffffff; --s-num: #c9a2ff; --s-call: #7fd6b3; --s-call-text: #2f9c74; --s-put: #ff9a8b; --s-term: #d46a9a; --s-track: #f1e6f2;
+  --s-display: 'Kiwi Maru', 'Zen Maru Gothic', serif; --s-body: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', system-ui, sans-serif;
+  --s-radius: 16px; --s-border: 1.5px solid #f3d9e6; --s-border-soft: 1.5px solid #f0dbe8; --s-shadow: 0 4px 0 #f6dce8; }
+/* B · Pop shonen */
+.b { --s-bg: #fff3c4; --s-ink: #161616; --s-card: #ffffff; --s-bar: #ffe27a; --s-choice: #ffffff;
+  --s-accent: #ff4d2e; --s-on-accent: #ffffff; --s-num: #00a99d; --s-call: #22b14c; --s-call-text: #138a37; --s-put: #ff4d2e; --s-term: #0077c8; --s-track: #f0e2a8;
+  --s-display: 'Dela Gothic One', 'M PLUS 1p', sans-serif; --s-body: 'M PLUS 1p', system-ui, sans-serif;
+  --s-radius: 6px; --s-border: 2.5px solid #161616; --s-border-soft: 2px solid #161616; --s-shadow: 4px 4px 0 #161616;
+  background-image: radial-gradient(#e9d27a 1px, transparent 1.2px); background-size: 10px 10px; }
+/* C · Cozy night chibi */
+.c { --s-bg: #141b3a; --s-ink: #f2eee6; --s-card: #1f2a55; --s-bar: #1a2349; --s-choice: #182148;
+  --s-accent: #ffd36e; --s-on-accent: #141b3a; --s-num: #ffd36e; --s-call: #7cf2c9; --s-call-text: #7cf2c9; --s-put: #ff8a7a; --s-term: #ffd36e; --s-track: #2b3769;
+  --s-display: 'RocknRoll One', 'M PLUS Rounded 1c', sans-serif; --s-body: 'M PLUS Rounded 1c', system-ui, sans-serif;
+  --s-radius: 14px; --s-border: 1px solid #2f3b72; --s-border-soft: 1px solid #34417c; --s-shadow: 0 0 0 1px #2f3b72, 0 10px 30px -12px #7cf2c955; }
+.a .hero h3 { color: #5b4a6b; }
+.b .hero h3 { color: #161616; } .b .hero h3 em { font-style: normal; background: #ff4d2e; color: #fff; padding: 0 .15em; }
+.c .hero h3 { color: #f2eee6; } .c .hero h3 em { font-style: normal; color: #ffd36e; }
+.hero h3 em { font-style: normal; }
+.a .hero h3 em { color: #ff6f9c; }
+
+.how { border-top: 1px solid var(--line); padding-top: 24px; display: grid; gap: 8px; max-width: 68ch; }
+.how h2 { margin: 0; font-size: 20px; }
+.how p { margin: 0; color: var(--muted); }
+.how code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+
+@media (max-width: 720px) {
+  .below { grid-template-columns: 1fr; }
+  .mascot { grid-template-columns: 120px 1fr; align-items: center; }
+  .hero .copy { width: 50%; }
+  .hero .sub { display: none; }
+  .choices { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .jump a, .choice { transition: border-color .15s ease; }
+}
+</style>
+
+<div class="wrap">
+  <header class="intro">
+    <div class="kicker">sim4options · kawaii manga restyle</div>
+    <h1>Pick a look for Options Quest</h1>
+    <p>Three directions. Grok made each hero and mascot. The app UI below each image uses that direction's colors and Japanese fonts. Choose one, or mix parts, for example "C colors with the A mascot".</p>
+    <nav class="jump" aria-label="Directions">
+      <a href="#a">A · Pastel shoujo</a><a href="#b">B · Pop shonen</a><a href="#c">C · Cozy night</a>
+    </nav>
+  </header>
+
+  <!-- A -->
+  <section class="dir" id="a">
+    <div class="dir-head"><span class="letter">A</span><h2>Pastel shoujo</h2><span class="tag">Soft, sweet, calm. A study owl, sparkles and hearts.</span></div>
+    <div class="specimen a">
+      <div class="hero">
+        <img src="img/A_hero.webp" alt="A white owl with round glasses on a stack of pastel books points at candlestick bars made of clouds" width="1280" height="720">
+        <div class="copy">
+          <h3>Learn options <em>one decision</em> at a time.</h3>
+          <p class="sub">210 questions, 65 terms, 7 market moments.</p>
+          <span class="cta">Start level 1</span>
+        </div>
+      </div>
+      <div class="below">
+        <div class="mascot">
+          <img src="img/A_mascot.webp" alt="Owl mascot sticker holding a candlestick chart sign" width="900" height="900" loading="lazy">
+          <div>
+            <div class="swatches" aria-label="Palette"><span style="background:#fff6ef"></span><span style="background:#ff8fb1"></span><span style="background:#c9a2ff"></span><span style="background:#7fd6b3"></span><span style="background:#5b4a6b"></span></div>
+            <p class="fontnote">Kiwi Maru + Zen Maru Gothic</p>
+          </div>
+        </div>
+        <div class="ui">
+          <div class="nav"><b>Options Quest</b><i class="on">Journey</i><i>Cards</i><i>Term map</i><i>Simulator</i><span class="lang">🌐 English</span></div>
+          <div class="card"><div class="level"><span class="n">1</span><div><h4>Foundations</h4><p>Calls, puts, strikes, premium and moneyness.</p></div><span class="go">Continue · 2/30</span><div class="bar"><span></span></div></div></div>
+          <div class="card q">
+            <h4>Which right does a <span class="term">call</span> give you?</h4>
+            <div class="choices"><span class="choice right">Call · the right to buy</span><span class="choice">Put · the right to sell</span></div>
+            <p class="verdict">Correct ✿</p>
+            <div class="clef"><span>Clef</span><span class="t"><span style="width:99%;background:var(--s-call)"></span></span><span>99%</span></div>
+            <div class="chips"><span class="chip">Call option</span><span class="chip">Put option</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes"><li><strong>Fits:</strong> beginners, a relaxed and friendly mood.</li><li><strong>Cost:</strong> the app goes from dark to light, so every screen needs new colors.</li></ul>
+  </section>
+
+  <!-- B -->
+  <section class="dir" id="b">
+    <div class="dir-head"><span class="letter">B</span><h2>Pop shonen</h2><span class="tag">Loud and fast. A fox trader, speed lines and halftone dots.</span></div>
+    <div class="specimen b">
+      <div class="hero">
+        <img src="img/B_hero.webp" alt="An orange fox in a headset leaps over a rising chart with comic bursts and speed lines" width="1280" height="720">
+        <div class="copy">
+          <h3>Learn options <em>one decision</em> at a time.</h3>
+          <p class="sub">210 questions, 65 terms, 7 market moments.</p>
+          <span class="cta">Start level 1</span>
+        </div>
+      </div>
+      <div class="below">
+        <div class="mascot">
+          <img src="img/B_mascot.webp" alt="Fox mascot sticker winking, holding an up-arrow sign and giving a thumbs-up" width="900" height="900" loading="lazy">
+          <div>
+            <div class="swatches" aria-label="Palette"><span style="background:#fff3c4"></span><span style="background:#ff4d2e"></span><span style="background:#00a99d"></span><span style="background:#22b14c"></span><span style="background:#161616"></span></div>
+            <p class="fontnote">Dela Gothic One + M PLUS 1p</p>
+          </div>
+        </div>
+        <div class="ui">
+          <div class="nav"><b>Options Quest</b><i class="on">Journey</i><i>Cards</i><i>Term map</i><i>Simulator</i><span class="lang">🌐 English</span></div>
+          <div class="card"><div class="level"><span class="n">1</span><div><h4>Foundations</h4><p>Calls, puts, strikes, premium and moneyness.</p></div><span class="go">Continue · 2/30</span><div class="bar"><span></span></div></div></div>
+          <div class="card q">
+            <h4>Which right does a <span class="term">call</span> give you?</h4>
+            <div class="choices"><span class="choice right">Call · the right to buy</span><span class="choice">Put · the right to sell</span></div>
+            <p class="verdict">Correct!!</p>
+            <div class="clef"><span>Clef</span><span class="t"><span style="width:99%;background:var(--s-call)"></span></span><span>99%</span></div>
+            <div class="chips"><span class="chip">Call option</span><span class="chip">Put option</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes"><li><strong>Fits:</strong> a game feel, streaks and rewards.</li><li><strong>Cost:</strong> the hero has comic words ("BOOM!", "GO!") although the prompt said no text. I can make it again without them.</li></ul>
+  </section>
+
+  <!-- C -->
+  <section class="dir" id="c">
+    <div class="dir-head"><span class="letter">C</span><h2>Cozy night</h2><span class="tag">Lo-fi Tokyo at night. A study cat, lanterns, soft neon.</span></div>
+    <div class="specimen c">
+      <div class="hero">
+        <img src="img/C_hero.webp" alt="A black cat in a hoodie studies a chart on a laptop by a window with Tokyo lanterns at night" width="1280" height="720">
+        <div class="copy">
+          <h3>Learn options <em>one decision</em> at a time.</h3>
+          <p class="sub">210 questions, 65 terms, 7 market moments.</p>
+          <span class="cta">Start level 1</span>
+        </div>
+      </div>
+      <div class="below">
+        <div class="mascot">
+          <img src="img/C_mascot.webp" alt="Black cat mascot sticker in a navy hoodie holding a glowing lantern" width="900" height="900" loading="lazy">
+          <div>
+            <div class="swatches" aria-label="Palette"><span style="background:#141b3a"></span><span style="background:#ffd36e"></span><span style="background:#7cf2c9"></span><span style="background:#ff8a7a"></span><span style="background:#f2eee6"></span></div>
+            <p class="fontnote">RocknRoll One + M PLUS Rounded 1c</p>
+          </div>
+        </div>
+        <div class="ui">
+          <div class="nav"><b>Options Quest</b><i class="on">Journey</i><i>Cards</i><i>Term map</i><i>Simulator</i><span class="lang">🌐 English</span></div>
+          <div class="card"><div class="level"><span class="n">1</span><div><h4>Foundations</h4><p>Calls, puts, strikes, premium and moneyness.</p></div><span class="go">Continue · 2/30</span><div class="bar"><span></span></div></div></div>
+          <div class="card q">
+            <h4>Which right does a <span class="term">call</span> give you?</h4>
+            <div class="choices"><span class="choice right">Call · the right to buy</span><span class="choice">Put · the right to sell</span></div>
+            <p class="verdict">Correct ☆</p>
+            <div class="clef"><span>Clef</span><span class="t"><span style="width:99%;background:var(--s-call)"></span></span><span>99%</span></div>
+            <div class="chips"><span class="chip">Call option</span><span class="chip">Put option</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes"><li><strong>Fits:</strong> long study sessions. It is closest to the current dark app, so the change is smallest.</li><li><strong>Cost:</strong> the cat looks more grumpy than sleepy. I can make it again with a softer face.</li></ul>
+  </section>
+
+  <section class="how">
+    <h2>How to choose</h2>
+    <p>Reply with a letter (<code>A</code>, <code>B</code> or <code>C</code>) or a mix (<code>C colors + A mascot</code>). You can also ask for new images, for example <code>B again, no text</code>. Then I restyle the app and make the other images it needs: one mascot pose for each level, and empty states.</p>
+  </section>
+</div>

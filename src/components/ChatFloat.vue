@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { AgentClient } from 'agents/client'
 import MdText from './MdText.vue'
+import FoxSticker from './FoxSticker.vue'
 import { useApp } from '../stores/app'
 
 const app = useApp()
@@ -46,16 +47,19 @@ onBeforeUnmount(() => client?.close())
 </script>
 
 <template>
-  <button v-if="!app.chatOpen" class="fab" aria-label="Open the tutor" @click="app.chatOpen = true">Ask tutor</button>
+  <button v-if="!app.chatOpen" class="fab" aria-label="Ask Kon, the tutor" @click="app.chatOpen = true"><img src="/fox/head.webp" alt="" /><span>Ask Kon</span></button>
   <aside v-else class="chat" aria-label="Tutor chat">
-    <header class="row"><strong class="grow">Tutor</strong>
+    <header class="row"><img class="av" src="/fox/head.webp" alt="" /><strong class="grow">Kon · tutor</strong>
       <button class="btn" @click="clear">Clear</button>
       <button class="btn" @click="app.chatOpen = false">Close</button></header>
     <p v-if="app.chatContext" class="ctx muted">Using the current question as context.</p>
     <div ref="log" class="log">
-      <p v-if="!msgs.length" class="muted">Ask anything: “Why a spread instead of a call?”, “What does vega mean here?”</p>
-      <div v-for="(m, i) in msgs" :key="i" :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" /><template v-else>{{ m.text }}</template></div>
-      <p v-if="pending" class="muted">Thinking…</p>
+      <FoxSticker v-if="!msgs.length" class="empty" pose="point" :size="110" say="Ask me anything! “Why a spread and not a call?” “What does vega mean here?”" />
+      <div v-for="(m, i) in msgs" :key="i" :class="['line', m.role]">
+        <img v-if="m.role === 'assistant'" class="av" src="/fox/head.webp" alt="" />
+        <div :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" /><template v-else>{{ m.text }}</template></div>
+      </div>
+      <FoxSticker v-if="pending" class="pending" pose="think" :size="56" say="Thinking…" />
     </div>
     <form class="row" @submit.prevent="send">
       <input v-model="input" class="grow" placeholder="Ask about this decision…" aria-label="Message" />
@@ -65,14 +69,24 @@ onBeforeUnmount(() => client?.close())
 </template>
 
 <style scoped>
-.fab { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--vol); color: var(--ink); border: 0; border-radius: 999px; padding: .8rem 1.15rem; font-weight: 700; box-shadow: 0 8px 24px rgb(0 0 0 / .35); }
-.chat { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 35; width: min(420px, calc(100vw - 2rem)); height: min(560px, 75vh); display: flex; flex-direction: column; gap: .6rem; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: .9rem; box-shadow: 0 16px 40px rgb(0 0 0 / .45); }
+.fab { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 30; display: inline-flex; align-items: center; gap: .3rem; background: var(--pop); color: var(--paper); border: 2px solid var(--edge); border-radius: 999px; padding: .25rem 1rem .25rem .3rem; font-weight: 800; box-shadow: var(--shadow); transition: transform .12s ease; }
+.fab img { width: 46px; height: 46px; margin: -10px 0 -4px; transition: transform .2s ease; }
+.fab:hover img { transform: rotate(-12deg) scale(1.1); }
+.fab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--edge); }
+.chat { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 35; width: min(420px, calc(100vw - 2rem)); height: min(580px, 78vh); display: flex; flex-direction: column; gap: .6rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 18px; padding: .8rem; box-shadow: 5px 5px 0 var(--edge); }
+header .av { width: 34px; height: 34px; }
 .ctx { font-size: .82rem; margin: 0; }
-.log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .5rem; }
-.msg { padding: .55rem .75rem; border-radius: 12px; font-family: var(--read); }
+.log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: .2rem .3rem .2rem 0; }
+.empty { margin: auto 0; align-items: flex-end; }
+.empty :deep(.bubble) { font-weight: 700; font-size: .88rem; }
+.line { display: flex; gap: .45rem; align-items: flex-start; }
+.line.user { justify-content: flex-end; }
+.line .av { width: 30px; height: 30px; flex: none; margin-top: .1rem; }
+.msg { padding: .55rem .8rem; border-radius: 14px; font-family: var(--read); border: 2px solid var(--edge); min-width: 0; }
 .msg.user, .msg.error { white-space: pre-wrap; }
-.msg.user { align-self: flex-end; background: var(--ink); }
-.msg.assistant { background: color-mix(in srgb, var(--vol) 10%, var(--panel)); border: 1px solid var(--line); }
-.msg.error { color: var(--put); }
+.msg.user { background: var(--pop); border-bottom-right-radius: 4px; }
+.msg.assistant { background: var(--panel); border-top-left-radius: 4px; box-shadow: var(--shadow-sm); }
+.msg.error { color: var(--put); border-color: var(--put); }
+.pending :deep(.bubble) { font-size: .85rem; font-weight: 700; }
 form { flex-wrap: nowrap; }
 </style>

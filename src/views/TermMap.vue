@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { TERMS, TERM_MAP, TERM_WEIGHT } from '../lib/content'
@@ -33,7 +34,7 @@ const graph = computed(() => {
 
 <template>
   <div class="wrap">
-    <h1>Term map</h1>
+    <header class="phead"><h1>Term map</h1><FoxSticker pose="point" :size="96" /></header>
     <p class="muted">Word size shows how often a term appears in questions and moments. Color shows your mastery: green strong, amber shaky, red weak, grey unseen.</p>
     <div class="cloud">
       <button v-for="t in cloud" :key="t.id" class="word" :class="{ sel: t.id === sel }" :style="{ fontSize: t.size + 'rem', color: t.color }" @click="sel = t.id">{{ t.name }}</button>
@@ -57,7 +58,7 @@ const graph = computed(() => {
 .cloud { display: flex; flex-wrap: wrap; gap: .2rem .9rem; align-items: baseline; padding: 1rem 0 2rem; }
 .word { background: none; border: 0; padding: 0; font-weight: 600; line-height: 1.2; }
 .word.sel { text-decoration: underline; text-underline-offset: 4px; }
-.graphbox { overflow-x: auto; margin-bottom: 1rem; }
+.graphbox { overflow-x: auto; margin-bottom: 1rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 16px; box-shadow: var(--shadow); padding: .5rem; }
 svg { width: 100%; min-width: 520px; height: auto; }
 .node { cursor: pointer; }
 .node:focus-visible circle { stroke: var(--vol); stroke-width: 3; }

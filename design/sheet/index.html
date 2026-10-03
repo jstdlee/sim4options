@@ -1,0 +1,84 @@
+<title>Kon Character Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap">
+<style>
+:root {
+  --paper: #fffbf2; --panel: #ffffff; --ink: #1a1712; --muted: #6e665a; --fox: #ff5a1f; --teal: #0e8c83; --pop: #ffd43b;
+  --display: 'Dela Gothic One', 'M PLUS Rounded 1c', system-ui, sans-serif;
+  --ui: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', system-ui, sans-serif;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background-color: var(--paper); color: var(--ink); font-family: var(--ui); font-size: 15px; line-height: 1.55;
+  background-image: radial-gradient(rgb(26 23 18 / .07) 1px, transparent 1.3px); background-size: 14px 14px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; display: grid; gap: 28px; }
+header { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+header img { width: 120px; height: auto; filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(2px 3px 0 rgb(26 23 18 / .18)); }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 5vw, 42px); line-height: 1.1; margin: 0 0 6px; }
+h1 .jp { font-size: .55em; color: var(--fox); margin-left: .3em; vertical-align: middle; }
+.lede { margin: 0; color: var(--muted); max-width: 64ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.facts span { border: 1.5px solid var(--ink); border-radius: 999px; padding: 2px 12px; font-size: 13px; font-weight: 700; background: var(--panel); display: inline-flex; align-items: center; gap: 6px; }
+.facts i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+.pose { background: var(--panel); border: 2px solid var(--ink); border-radius: 16px; box-shadow: 3px 3px 0 var(--ink); padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.pose figure { margin: 0; height: 170px; display: grid; place-items: center; background: radial-gradient(rgb(255 212 59 / .5) 2px, transparent 2.4px) 0 0 / 12px 12px; border-radius: 10px; }
+.pose img { max-height: 156px; max-width: 100%; width: auto; filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(2px 3px 0 rgb(26 23 18 / .18)); }
+.pose h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.pose h2 code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 12px; color: var(--teal); background: rgb(14 140 131 / .08); border-radius: 6px; padding: 1px 6px; }
+.pose p { margin: 0; font-size: 13px; color: var(--muted); }
+.pose p b { color: var(--ink); }
+@media (prefers-reduced-motion: no-preference) {
+  .pose img { transition: transform .2s ease; }
+  .pose:hover img { transform: translateY(-4px) rotate(-2deg); }
+}
+
+.notes { border-top: 2px solid var(--ink); padding-top: 18px; display: grid; gap: 6px; max-width: 72ch; }
+.notes h2 { font-family: var(--display); font-weight: 400; font-size: 20px; margin: 0 0 4px; }
+.notes p { margin: 0; color: var(--muted); }
+.notes code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; background: var(--panel); border: 1px solid #e7dcc6; border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+@media (max-width: 520px) { header { grid-template-columns: 1fr; } header img { width: 96px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <img src="head.webp" alt="Kon's head" width="470" height="512">
+    <div>
+      <h1>Kon <span class="jp">コン</span></h1>
+      <p class="lede">The fox tutor of Options Quest. Thirteen poses, all made from one master design, so the face, colors and neckerchief match in every pose. Each file is a transparent WebP, 512 px tall at most.</p>
+      <div class="facts">
+        <span><i style="background:#f0892a"></i>Fur orange</span>
+        <span><i style="background:#f6e6cb"></i>Cream</span>
+        <span><i style="background:#0e8c83"></i>Teal neckerchief</span>
+        <span><i style="background:#1a1712"></i>Ink line</span>
+        <span>Drawn with Grok image_edit</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="grid" aria-label="Poses">
+    <article class="pose"><figure><img src="smile.webp" alt="Kon smiling with paws behind back" loading="lazy"></figure><h2>Smile <code>smile</code></h2><p><b>Used in:</b> Settings page title.</p></article>
+    <article class="pose"><figure><img src="wave.webp" alt="Kon waving hello" loading="lazy"></figure><h2>Wave <code>wave</code></h2><p><b>Used in:</b> home banner, “Hi, I’m Kon!” / “Welcome back!”.</p></article>
+    <article class="pose"><figure><img src="point.webp" alt="Kon pointing to the right" loading="lazy"></figure><h2>Point <code>point</code></h2><p><b>Used in:</b> empty tutor chat, Term map title.</p></article>
+    <article class="pose"><figure><img src="think.webp" alt="Kon thinking, paw on chin" loading="lazy"></figure><h2>Think <code>think</code></h2><p><b>Used in:</b> while Clef decides, while grading, tutor “Thinking…”, Simulator title.</p></article>
+    <article class="pose"><figure><img src="laugh.webp" alt="Kon laughing" loading="lazy"></figure><h2>Laugh <code>laugh</code></h2><p><b>Used in:</b> correct answer on a middle step.</p></article>
+    <article class="pose"><figure><img src="cheer.webp" alt="Kon jumping with both arms up" loading="lazy"></figure><h2>Cheer <code>cheer</code></h2><p><b>Used in:</b> correct answer on the last step.</p></article>
+    <article class="pose"><figure><img src="oops.webp" alt="Kon embarrassed, scratching head" loading="lazy"></figure><h2>Oops <code>oops</code></h2><p><b>Used in:</b> wrong answer, page not found.</p></article>
+    <article class="pose"><figure><img src="sleep.webp" alt="Kon curled up asleep" loading="lazy"></figure><h2>Sleep <code>sleep</code></h2><p><b>Used in:</b> no search results on Skill cards.</p></article>
+    <article class="pose"><figure><img src="study.webp" alt="Kon reading a book" loading="lazy"></figure><h2>Study <code>study</code></h2><p><b>Used in:</b> while an explanation loads, Skill cards title.</p></article>
+    <article class="pose"><figure><img src="thumbs.webp" alt="Kon giving a thumbs-up and winking" loading="lazy"></figure><h2>Thumbs-up <code>thumbs</code></h2><p><b>Used in:</b> stamp on finished levels, “Saved!” in Settings.</p></article>
+    <article class="pose"><figure><img src="surprised.webp" alt="Kon surprised with paws up" loading="lazy"></figure><h2>Surprised <code>surprised</code></h2><p><b>Used in:</b> Market moments title, final-test stamp.</p></article>
+    <article class="pose"><figure><img src="sign.webp" alt="Kon holding a blank sign above its head" loading="lazy"></figure><h2>Sign <code>sign</code></h2><p><b>Used in:</b> login page. The app writes “Members only!” on the board.</p></article>
+    <article class="pose"><figure><img src="head.webp" alt="Kon's head" loading="lazy"></figure><h2>Head <code>head</code></h2><p><b>Used in:</b> logo, favicon, “Ask Kon” button, tutor avatar.</p></article>
+  </section>
+
+  <section class="notes">
+    <h2>How to use Kon in the app</h2>
+    <p>Use <code>&lt;FoxSticker pose="cheer" :size="96" say="Nice!" /&gt;</code>. The component adds the white sticker outline and the manga speech bubble. Add <code>bob</code> for a slow idle sway, which turns off when the viewer asks for reduced motion.</p>
+    <p>To add a pose, add a line to <code>design/jobs_poses.txt</code>, run <code>design/edit.sh</code> with the master design, then run <code>design/cutout.py</code>.</p>
+  </section>
+</div>

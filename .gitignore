@@ -4,3 +4,10 @@ dist
 .dev.vars
 worker-configuration.d.ts
 .prod-token
+
+# Raw Grok output and page copies (regenerate with design/*.sh and design/cutout.py)
+design/**/*.png
+design/**/*.jpg
+design/sheet/*.webp
+design/picker/img/
+design/**/w.*/

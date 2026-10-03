@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref, watch } from 'vue'
 import type { Leg } from '@shared/types'
 import { bs, round2 } from '@shared/bs'
@@ -56,7 +57,7 @@ function ask() {
 
 <template>
   <div class="wrap">
-    <h1>Simulator</h1>
+    <header class="phead"><h1>Simulator</h1><FoxSticker pose="think" :size="96" /></header>
     <p class="read muted">Open a structure, then move the market or let time pass. The dashed curve is today’s model value; the solid line is the payoff at expiry.</p>
 
     <div class="grid">
@@ -85,8 +86,8 @@ function ask() {
 <style scoped>
 .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin: 1rem 0; }
 label { display: grid; gap: .25rem; margin-bottom: .7rem; font-size: .92rem; }
-input[type=range] { padding: 0; accent-color: var(--vol); }
-.pnl { font-size: 2.4rem; font-weight: 800; margin: .6rem 0 0; font-variant-numeric: tabular-nums; }
+input[type=range] { padding: 0; accent-color: var(--fox); }
+.pnl { font-family: var(--display); font-size: 2.4rem; margin: .6rem 0 0; font-variant-numeric: tabular-nums; }
 .pnl.up { color: var(--call); } .pnl.down { color: var(--put); }
 .greeks { color: var(--vol); font-variant-numeric: tabular-nums; }
 </style>

@@ -35,9 +35,9 @@ const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') app.openTerm = nul
 </template>
 
 <style scoped>
-.scrim { position: fixed; inset: 0; background: rgb(8 14 26 / .6); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: min(640px, 100%); max-height: 80vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom, 0px)); }
-.formula { font-family: var(--read); font-style: italic; color: var(--vol); }
+.scrim { position: fixed; inset: 0; background: rgb(26 23 18 / .35); z-index: 40; display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: min(640px, 100%); max-height: 80vh; overflow: auto; background: var(--panel); border: 2px solid var(--edge); border-bottom: 0; border-radius: 18px 18px 0 0; padding: 1.2rem 1.2rem calc(1.2rem + env(safe-area-inset-bottom, 0px)); }
+.formula { font-family: ui-monospace, 'SF Mono', Menlo, monospace; color: var(--teal); background: color-mix(in srgb, var(--teal) 8%, transparent); border-radius: 8px; padding: .3rem .6rem; }
 .tags { margin: .5rem 0 1rem; }
 .foot { margin-top: 1.2rem; }
 .sheet-enter-active, .sheet-leave-active { transition: opacity .18s; }

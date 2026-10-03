@@ -1,43 +1,86 @@
+/* Light pop-manga theme. Kon the fox lives in /public/fox. */
 :root {
-  --ink: #13223b;      /* page */
-  --panel: #1b2e4d;    /* surfaces */
-  --line: #2b4469;     /* rules */
-  --paper: #eef2f7;    /* text */
-  --muted: #93a4be;
-  --call: #3dbe8b;     /* calls / profit */
-  --put: #ef6f5e;      /* puts / loss */
-  --vol: #e9b949;      /* volatility & Greeks */
-  --ui: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
-  --read: 'Source Serif 4', Georgia, 'Times New Roman', serif;
-  color-scheme: dark;
+  --ink: #fffbf2;      /* page: warm paper */
+  --panel: #ffffff;    /* panels */
+  --line: #e7dcc6;     /* soft rules, chart grid */
+  --edge: #1a1712;     /* manga panel border */
+  --paper: #1a1712;    /* text */
+  --muted: #6e665a;
+  --fox: #ff5a1f;      /* primary action */
+  --fox-deep: #d9430e;
+  --teal: #0e8c83;     /* terms, links */
+  --pop: #ffd43b;      /* highlighter */
+  --call: #1fa45a;     /* calls / profit */
+  --put: #e8432e;      /* puts / loss */
+  --vol: #0e8c83;      /* volatility, Greeks, focus */
+  --shadow: 3px 3px 0 var(--edge);
+  --shadow-sm: 2px 2px 0 var(--edge);
+  --display: 'Dela Gothic One', 'M PLUS Rounded 1c', 'Hiragino Sans', system-ui, sans-serif;
+  --ui: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Segoe UI', system-ui, sans-serif;
+  --read: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 *, *::before, *::after { box-sizing: inherit; }
-html, body { margin: 0; background: var(--ink); color: var(--paper); font-family: var(--ui); font-size: 16px; line-height: 1.5; }
-a { color: inherit; }
+html, body { margin: 0; color: var(--paper); font-family: var(--ui); font-size: 16px; line-height: 1.55; }
+html { background: var(--ink); }
+body {
+  background-color: var(--ink);
+  background-image: radial-gradient(color-mix(in srgb, var(--edge) 7%, transparent) 1px, transparent 1.3px);
+  background-size: 14px 14px;
+}
+a { color: var(--teal); }
 button { font: inherit; color: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid var(--vol); outline-offset: 2px; }
-h1, h2, h3 { line-height: 1.15; margin: 0 0 .5rem; font-weight: 800; letter-spacing: -0.01em; }
-h1 { font-size: clamp(1.9rem, 5vw, 3rem); }
-h2 { font-size: 1.45rem; }
-h3 { font-size: 1.1rem; font-weight: 600; }
+:focus-visible { outline: 3px solid var(--vol); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.2; margin: 0 0 .5rem; letter-spacing: 0; text-wrap: balance; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 5vw, 2.7rem); }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.35rem; }
+h3 { font-size: 1.08rem; font-weight: 800; }
 p { margin: 0 0 .75rem; }
-.read { font-family: var(--read); font-size: 1.06rem; line-height: 1.62; max-width: 68ch; }
+.read { font-family: var(--read); font-size: 1.04rem; line-height: 1.75; max-width: 68ch; }
 .muted { color: var(--muted); }
 .wrap { max-width: 980px; margin: 0 auto; padding: 1rem 1.1rem 6rem; }
-.btn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .95rem; }
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--paper); color: var(--ink); border-color: var(--paper); font-weight: 600; }
-.btn:disabled { opacity: .45; cursor: default; }
-.chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--line); border-radius: 999px; padding: .15rem .65rem; font-size: .85rem; background: transparent; }
-.chip.on { background: var(--paper); color: var(--ink); border-color: var(--paper); }
-.term-link { background: none; border: 0; padding: 0; color: var(--vol); text-decoration: underline dotted; text-underline-offset: 3px; font: inherit; }
-.surface { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 1rem; }
-input, select, textarea { font: inherit; color: var(--paper); background: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .65rem; width: 100%; }
+.mark { background: linear-gradient(transparent 55%, var(--pop) 55%, var(--pop) 92%, transparent 92%); padding: 0 .1em; }
+
+/* Buttons: ink border + hard offset shadow; press pushes the button into its shadow. */
+.btn {
+  display: inline-flex; align-items: center; gap: .4rem; text-decoration: none; color: var(--paper);
+  background: var(--panel); border: 2px solid var(--edge); border-radius: 12px; padding: .5rem .95rem;
+  font-weight: 700; box-shadow: var(--shadow-sm); transition: transform .08s ease, box-shadow .08s ease, background .15s;
+}
+.btn:hover { background: #fff6dc; }
+.btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--edge); }
+.btn.primary { background: var(--fox); color: #fff; }
+.btn.primary:hover { background: var(--fox-deep); }
+.btn:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.btn .ico { width: 1.6em; height: 1.6em; margin: -.35em 0 -.35em -.35em; object-fit: contain; }
+
+.chip { display: inline-flex; align-items: center; gap: .3rem; border: 1.5px solid var(--edge); border-radius: 999px; padding: .1rem .7rem; font-size: .85rem; font-weight: 700; background: var(--panel); color: var(--paper); }
+button.chip:hover { background: #fff6dc; }
+.chip.on { background: var(--pop); }
+.term-link { background: none; border: 0; padding: 0; color: var(--teal); font: inherit; font-weight: 700; text-decoration: underline wavy color-mix(in srgb, var(--teal) 55%, transparent); text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
+.term-link:hover { background: color-mix(in srgb, var(--pop) 60%, transparent); }
+.surface { background: var(--panel); border: 2px solid var(--edge); border-radius: 16px; padding: 1rem; box-shadow: var(--shadow); }
+input, select, textarea { font: inherit; color: var(--paper); background: var(--panel); border: 2px solid var(--edge); border-radius: 10px; padding: .5rem .65rem; width: 100%; }
+input[type='range'] { accent-color: var(--fox); border: 0; padding: 0; background: none; }
+input[type='checkbox'] { accent-color: var(--fox); }
 .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .grow { flex: 1; }
+
+/* Page title with a Kon sticker on the right. */
+.phead { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin: .6rem 0 .4rem; }
+.phead h1 { margin: 0 0 .3rem; }
+.phead .fox { transform: rotate(4deg); flex: none; }
+@media (max-width: 560px) { .phead .fox img { height: 64px !important; } }
+
+/* Manga speech bubble with a tail. Put .bubble next to a FoxSticker. */
+.bubble { position: relative; background: var(--panel); border: 2px solid var(--edge); border-radius: 18px; padding: .45rem .8rem; font-weight: 800; box-shadow: var(--shadow-sm); }
+.bubble::before, .bubble::after { content: ''; position: absolute; top: 50%; border-style: solid; border-color: transparent; transform: translateY(-50%); }
+.bubble::before { left: -13px; border-width: 8px 12px 8px 0; border-right-color: var(--edge); }
+.bubble::after { left: -8px; border-width: 6px 9px 6px 0; border-right-color: var(--panel); }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 
 /* Google Translate: hide its top banner, hover balloons and highlight; keep the page in place. */

@@ -1,0 +1,13 @@
+smile|Pose the fox standing relaxed with both paws behind its back and a warm, gentle closed-mouth smile.
+wave|Pose the fox waving hello with one paw raised high, the other paw on its hip, a bright open-mouth smile.
+point|Pose the fox turned slightly to the side, pointing with one arm stretched out toward the right edge of the image, looking the same way with a helpful, explaining expression.
+think|Pose the fox thinking: one paw on its chin, eyes looking up to the side, mouth a small flat line, the other arm crossed under it.
+laugh|Pose the fox laughing hard: eyes closed as happy upward arcs, mouth wide open, leaning back a little with both paws on its belly.
+cheer|Pose the fox jumping in the air with both arms up in celebration, legs tucked, ears up, a big open-mouth grin.
+oops|Pose the fox embarrassed after a mistake: scratching the back of its head with one paw, a wry, sheepish smile, one small sweat drop beside its head, ears slightly down.
+sleep|Pose the fox curled up asleep on the ground with its fluffy tail wrapped around as a pillow, eyes closed as relaxed curved lines, peaceful face.
+study|Pose the fox sitting on the ground reading an open book held in both paws, focused, curious expression.
+thumbs|Pose the fox giving a confident thumbs-up with one paw and winking with one eye, a cheeky grin.
+surprised|Pose the fox startled: ears straight up, eyes wide as small circles, mouth a small open circle, both paws raised near its face, fur on the tail puffed up.
+sign|Pose the fox standing and holding up a blank white rectangular sign board with both paws above its head, smiling. The board is completely empty and plain white.
+head|Show only the fox's head and the top of its neckerchief, front view, smiling, filling most of the image, for use as a round avatar icon.

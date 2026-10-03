@@ -14,6 +14,7 @@ export const router = createRouter({
     { path: '/sim', component: () => import('./views/Simulator.vue') },
     { path: '/settings', component: () => import('./views/Settings.vue') },
     { path: '/login', component: () => import('./views/Login.vue') },
+    { path: '/:rest(.*)*', component: () => import('./views/NotFound.vue') },
   ],
 })
 

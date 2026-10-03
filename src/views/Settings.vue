@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import FoxSticker from '../components/FoxSticker.vue'
 import { reactive, ref } from 'vue'
 import { useApp, type ByokCfg } from '../stores/app'
 import { useRouter } from 'vue-router'
@@ -23,7 +24,7 @@ function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (s
 
 <template>
   <div class="wrap">
-    <h1>Settings</h1>
+    <header class="phead"><h1>Settings</h1><FoxSticker pose="smile" :size="96" /></header>
     <section class="surface box">
       <h2>AI model</h2>
       <p class="muted">Explanations and the tutor use Workers AI by default. Clef decisions always run on Workers AI. Bring your own key to use another provider.</p>
@@ -33,7 +34,7 @@ function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (s
       <label>Model<input v-model="f.model" :placeholder="f.provider === 'workers-ai' ? '@cf/moonshotai/kimi-k2.6' : 'model name'" /></label>
       <p class="muted small">{{ hints[f.provider] }}</p>
       <label v-if="f.provider !== 'workers-ai'">API key<input v-model="f.key" type="password" autocomplete="off" placeholder="Stored only in this browser" /></label>
-      <div class="row"><button class="btn primary" @click="save">Save model settings</button><span v-if="saved" class="muted">Saved</span></div>
+      <div class="row"><button class="btn primary" @click="save">Save model settings</button><FoxSticker v-if="saved" pose="thumbs" :size="48" say="Saved!" /></div>
     </section>
     <section class="surface box">
       <h2>Progress</h2>
