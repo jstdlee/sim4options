@@ -15,7 +15,7 @@ export async function webSearch(env: Env, query: string, limit = 5): Promise<Web
     const res: Response = await (env.AI as any).websearch({ gatewayId: env.AI_GATEWAY_ID, query: q, provider: env.SEARCH_PROVIDER || 'ceramic', limit })
     if (res.ok) {
       const j: any = await res.json()
-      const results = (j.items ?? []).map((i: any) => ({ title: String(i.title ?? i.url), url: String(i.url), snippet: String(i.description ?? '').slice(0, 400) }))
+      const results = (j.items ?? []).map((i: any) => ({ title: String(i.title || i.url), url: String(i.url), snippet: String(i.description ?? '').slice(0, 400) }))
       if (results.length) return { provider: `cloudflare/${env.SEARCH_PROVIDER || 'ceramic'}`, results }
       errors.push('cloudflare: no results')
     } else errors.push(`cloudflare: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`)
@@ -30,7 +30,7 @@ export async function webSearch(env: Env, query: string, limit = 5): Promise<Web
     })
     if (!res.ok) { errors.push(`exa: HTTP ${res.status}`); return { provider: 'none', results: [], errors } }
     const j: any = await res.json()
-    const results = (j.results ?? []).map((r: any) => ({ title: String(r.title ?? r.url), url: String(r.url), snippet: String(r.text ?? '').replace(/\s+/g, ' ').slice(0, 400) }))
+    const results = (j.results ?? []).map((r: any) => ({ title: String(r.title || r.url), url: String(r.url), snippet: String(r.text ?? '').replace(/\s+/g, ' ').slice(0, 400) }))
     return { provider: results.length ? 'exa' : 'none', results, errors }
   } catch (e: any) { errors.push(`exa: ${String(e?.message ?? e).slice(0, 200)}`); return { provider: 'none', results: [], errors } }
 }
