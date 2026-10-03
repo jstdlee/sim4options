@@ -1,4 +1,5 @@
-import type { Question, Step, Level } from '../shared/types'
+import type { Question, Level } from '../shared/types'
+import { s } from './helpers'
 
 export const LEVELS: Level[] = [
   { n: 1, name: 'Foundations', blurb: 'Calls, puts, strikes, premium and moneyness.' },
@@ -10,11 +11,8 @@ export const LEVELS: Level[] = [
   { n: 7, name: 'Simulator drills', blurb: 'Build, advance time, manage.' },
 ]
 
-const s = (prompt: string, choices: [string, string][], answer: string, why: string): Step => ({
-  prompt, choices: choices.map(([id, label]) => ({ id, label })), answer, why,
-})
 
-export const AUTHORED: Question[] = [
+const AUTHORED_BASE: Question[] = [
   // ───────── L1
   { id: 'l1-01', level: 1, title: 'Which right?', terms: ['call', 'put'], tags: ['basics'],
     scenario: 'You think XYZ will rise over the next month.',
@@ -193,3 +191,6 @@ export const AUTHORED: Question[] = [
     scenario: 'Long $100 call bought at $3, stock now $118, 30 DTE left.',
     steps: [s('Lock gains but keep exposure?', [['roll', 'Roll up: sell 100s, buy 115s'], ['hold', 'Hold it all'], ['add', 'Buy more 100s']], 'roll', 'Takes most risk off while keeping upside.')] },
 ]
+
+import { AUTHORED_MORE } from './questions_more'
+export const AUTHORED: Question[] = [...AUTHORED_BASE, ...AUTHORED_MORE]

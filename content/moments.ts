@@ -1,11 +1,9 @@
-import type { Moment, Step } from '../shared/types'
+import type { Moment } from '../shared/types'
+import { s } from './helpers'
 
 // Prices and IV figures are approximate, reconstructed for teaching. Verify before trading decisions.
-const s = (prompt: string, choices: [string, string][], answer: string, why: string): Step => ({
-  prompt, choices: choices.map(([id, label]) => ({ id, label })), answer, why,
-})
 
-export const MOMENTS: Moment[] = [
+const MOMENTS_BASE: Moment[] = [
   {
     id: 'nvda-2023-05', ticker: 'NVDA', title: 'The AI guidance gap', date: 'May 2023',
     summary: 'Data-center guidance blew past estimates and the stock gapped ~24% overnight.',
@@ -105,3 +103,6 @@ export const MOMENTS: Moment[] = [
     outcome: 'The classic short-volatility blow-up: define risk, size small.',
   },
 ]
+
+import { MOMENTS_MORE } from './moments_more'
+export const MOMENTS: Moment[] = [...MOMENTS_BASE, ...MOMENTS_MORE]

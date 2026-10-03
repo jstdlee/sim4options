@@ -1,7 +1,7 @@
 import type { Term } from '../shared/types'
 
 // [id, name, short, tags, related, formula?, example?]
-type T = [string, string, string, string[], string[], string?, string?]
+export type T = [string, string, string, string[], string[], string?, string?]
 
 const raw: T[] = [
   ['option', 'Option', 'A contract giving the right, not the obligation, to buy or sell an underlying at a set price before a set date.', ['basics'], ['call', 'put', 'underlying', 'strike', 'expiration']],
@@ -71,5 +71,7 @@ const raw: T[] = [
   ['moving-average', 'Moving average', 'Average price over N days (e.g. 50/200). Price above = uptrend context.', ['indicator'], ['rsi']],
 ]
 
-export const TERMS: Term[] = raw.map(([id, name, short, tags, related, formula, example]) => ({ id, name, short, tags, related, formula, example }))
+import { RAW_MORE } from './terms_more'
+
+export const TERMS: Term[] = [...raw, ...RAW_MORE].map(([id, name, short, tags, related, formula, example]) => ({ id, name, short, tags, related, formula, example }))
 export const TERM_MAP: Record<string, Term> = Object.fromEntries(TERMS.map((t) => [t.id, t]))
