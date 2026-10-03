@@ -31,6 +31,20 @@ const finished = computed(() => Object.keys(picks.value).length === props.steps.
 const correctCount = computed(() => props.steps.filter((s, i) => picks.value[i] === s.answer).length)
 const label = (id: string) => step.value.choices.find((c) => c.id === id)?.label ?? id
 
+// Moments: the brief is the only background. Clef, the explanation and Kon see exactly what the learner sees.
+const brief = computed(() => step.value?.brief)
+const situation = computed(() => brief.value
+  ? `${plain(props.scenario)}\nCheckpoint ${idx.value + 1} of ${props.steps.length} — ${brief.value.label} (${brief.value.date}): ${brief.value.facts.join('. ')}.`
+  : plain(props.scenario))
+// Bold the numbers in a fact: prices, percents, levels, ≈ values.
+const NUM = /(≈\s?)?[−+-]?[$€£]?\d[\d,]*(\.\d+)?\s?(%|bp|[KMBT]\b|x\b)?/g
+function marks(text: string) {
+  const out: { t: string; b: boolean }[] = []; let last = 0
+  for (const m of text.matchAll(NUM)) { if (m.index! > last) out.push({ t: text.slice(last, m.index), b: false }); out.push({ t: m[0], b: true }); last = m.index! + m[0].length }
+  if (last < text.length) out.push({ t: text.slice(last), b: false })
+  return out
+}
+
 // Kon in the card corner follows what is happening.
 const pose = computed<Pose>(() => {
   if (busy.value === 'clef' || busy.value === 'grade') return 'think'
@@ -46,7 +60,7 @@ usePageContext(() => {
   if (!st) return null
   const lines = [
     `${props.kind === 'moment' ? 'Market moment' : 'Question'}: ${props.title ?? props.qid}`,
-    `Scenario: ${plain(props.scenario)}`,
+    `Scenario: ${situation.value}`,
     `Step ${idx.value + 1} of ${props.steps.length}: ${plain(st.prompt)}`,
     `Choices: ${st.choices.map((c) => c.label).join(' | ')}`,
   ]
@@ -71,14 +85,14 @@ function choose(id: string) {
 
 async function askClef() {
   busy.value = 'clef'
-  clefOut.value[idx.value] = await api.spar(plain(props.scenario), plain(step.value.prompt), step.value.choices).catch(() => null)
+  clefOut.value[idx.value] = await api.spar(situation.value, plain(step.value.prompt), step.value.choices).catch(() => null)
   busy.value = null
 }
 async function askExplain(fresh = false) {
   busy.value = 'ai'
   const c = clefOut.value[idx.value]
   const r = await api.explain({
-    scenario: plain(props.scenario), prompt: plain(step.value.prompt), choices: step.value.choices.map((c) => c.label),
+    scenario: situation.value, prompt: plain(step.value.prompt), choices: step.value.choices.map((c) => c.label),
     correct: label(step.value.answer), picked: label(picked.value!), why: plain(step.value.why),
     clef: c?.ok ? c.fields.pick?.probs : undefined, byok: app.byokPayload,
   }, fresh).catch((e): { ok: boolean; text?: string; error?: string; cached?: unknown } => ({ ok: false, error: String(e) }))
@@ -108,7 +122,13 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
       </li>
     </ol>
 
-    <h3 class="prompt"><TermText :text="step.prompt" /></h3>
+    <section v-if="brief" class="brief" :aria-label="`Situation at checkpoint ${idx + 1}`">
+      <header><span class="cp">Checkpoint {{ idx + 1 }}/{{ steps.length }}</span><b>{{ brief.label }}</b><time>{{ brief.date }}</time></header>
+      <ul><li v-for="(f, k) in brief.facts" :key="k"><template v-for="(seg, j) in marks(f)" :key="j"><b v-if="seg.b">{{ seg.t }}</b><template v-else>{{ seg.t }}</template></template></li></ul>
+      <p v-if="brief.note" class="note"><i class="fa-solid fa-circle-info" aria-hidden="true" /> {{ brief.note }}</p>
+    </section>
+
+    <h3 class="prompt"><i v-if="brief" class="fa-solid fa-circle-question" aria-hidden="true" /> <TermText :text="step.prompt" /></h3>
     <div class="choices" :class="{ three: step.choices.length === 3 }" role="group" aria-label="Choices">
       <button v-for="c in step.choices" :key="c.id" class="choice"
         :class="{ right: picked && c.id === step.answer, wrong: picked === c.id && c.id !== step.answer }"
@@ -172,6 +192,16 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
 .dot.bad { background: var(--put); color: #fff; }
 .dot:disabled { opacity: .45; }
 .prompt { font-size: 1.15rem; margin: 0; white-space: pre-line; }
+
+/* Moment brief: the facts known at this checkpoint, numbers in bold. */
+.brief { border: 2px solid var(--edge); border-radius: 14px; background: var(--ink); padding: .7rem .95rem .8rem; }
+.brief header { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .6rem; margin-bottom: .35rem; }
+.brief .cp { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; padding: .05rem .45rem; border: 1.5px solid var(--edge); border-radius: 6px; background: var(--pop); }
+.brief time { margin-left: auto; font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.brief ul { margin: 0; padding-left: 1.15rem; display: grid; gap: .2rem; font-family: var(--read); line-height: 1.5; }
+.brief li b { font-weight: 700; color: var(--paper); background: color-mix(in srgb, var(--pop) 45%, transparent); border-radius: 3px; padding: 0 .1em; }
+.brief .note { margin: .4rem 0 0; font-size: .78rem; color: var(--muted); }
+.prompt i { color: var(--fox); }
 
 /* Choices: equal cells. 2 or 4 options → 2 columns, 3 options → 3 columns, one column on phones. */
 .choices { display: grid; gap: .7rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }

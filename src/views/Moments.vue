@@ -20,7 +20,7 @@ const passed = computed(() => MOMENTS.filter((m) => { const r = score(m.id); ret
 
 usePageContext(() => ({
   kind: 'page', label: `Market moments · ${passed.value}/${MOMENTS.length} passed`,
-  text: `Market moments list. Passed ${passed.value} of ${MOMENTS.length}. Moments: ${list.value.map((m) => { const r = score(m.id); return `${m.ticker} ${m.title} (${m.date})${r ? ` ${r.correct}/${r.total}` : ''}` }).join('; ')}.`,
+  text: `Market moments list. Passed ${passed.value} of ${MOMENTS.length}. Moments: ${list.value.map((m) => { const r = score(m.id); return r ? `${m.ticker} ${m.title} (${m.date}) ${r.correct}/${r.total}` : `${m.ticker} (${m.date}, not tried — do not reveal what happened)` }).join('; ')}.`,
 }))
 </script>
 
@@ -36,7 +36,10 @@ usePageContext(() => ({
     <div class="list">
       <RouterLink v-for="m in list" :key="m.id" :to="`/moments/${m.id}/0`" class="moment">
         <span class="tk">{{ m.ticker }}</span>
-        <div class="grow"><h2>{{ m.title }}</h2><p class="muted">{{ m.date }}. {{ m.summary }}</p></div>
+        <div class="grow">
+          <template v-if="score(m.id)"><h2>{{ m.title }}</h2><p class="muted">{{ m.date }}. {{ m.summary }}</p></template>
+          <template v-else><h2>{{ m.date }}</h2><p class="themes"><span v-for="t in m.tags" :key="t" class="chip">{{ t }}</span><span class="muted small">Not tried yet: the story stays hidden until you decide.</span></p></template>
+        </div>
         <span v-if="score(m.id)" class="chip" :class="{ on: score(m.id).correct / score(m.id).total >= 2 / 3 }">{{ score(m.id).correct }}/{{ score(m.id).total }}</span>
       </RouterLink>
     </div>
@@ -54,4 +57,6 @@ usePageContext(() => ({
 .moment h2 { font-size: 1.1rem; margin: 0; }
 .moment p { margin: .2rem 0 0; }
 .tk { font-family: var(--display); font-size: .95rem; min-width: 4.2rem; text-align: center; padding: .25rem .4rem; border: 2px solid var(--edge); border-radius: 8px; background: var(--pop); }
+.themes { display: flex; flex-wrap: wrap; gap: .3rem .4rem; align-items: center; margin: .25rem 0 0; }
+.small { font-size: .8rem; }
 </style>

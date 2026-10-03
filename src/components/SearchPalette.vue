@@ -25,7 +25,7 @@ const PAGES: [string, string, string][] = [['/', 'Journey', 'fa-route'], ['/card
 const index: Item[] = [
   ...PAGES.map(([to, title, icon]) => ({ group: 'Pages', icon, title, sub: '', hay: low(title), go: () => router.push(to) })),
   ...TERMS.map((t) => ({ group: 'Terms', icon: 'fa-book', title: t.name, sub: t.short, hay: low(`${t.name} ${t.id} ${t.tags.join(' ')} ${t.short}`), go: () => { app.openTerm = t.id } })),
-  ...MOMENTS.map((m) => ({ group: 'Market moments', icon: 'fa-bolt', title: `${m.ticker}: ${m.title}`, sub: `${m.date} · ${m.summary}`, hay: low(`${m.ticker} ${m.title} ${m.date} ${m.summary} ${m.tags.join(' ')} ${m.terms.join(' ')}`), go: () => router.push(`/moments/${m.id}/0`) })),
+  ...MOMENTS.map((m) => ({ group: 'Market moments', icon: 'fa-bolt', title: `${m.ticker} · ${m.date}`, sub: m.tags.join(' · '), hay: low(`${m.ticker} ${m.title} ${m.date} ${m.summary} ${m.tags.join(' ')} ${m.terms.join(' ')}`), go: () => router.push(`/moments/${m.id}/0`) })),
   ...Object.entries(presets).map(([k, [name]]) => ({ group: 'Simulator', icon: 'fa-sliders', title: name, sub: 'Open in the simulator', hay: low(`${name} ${k} simulator`), go: () => router.push(`/sim?preset=${k}`) })),
   ...LEVELS.flatMap((l) => BANK[l.n].map((qq, i) => ({
     group: 'Questions', icon: 'fa-circle-question', title: qq.title, sub: `Level ${l.n} · ${plain(qq.scenario)}`,

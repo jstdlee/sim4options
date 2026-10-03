@@ -15,7 +15,11 @@ export interface Step {
   choices: Choice[]
   answer: string          // choice id
   why: string             // short static explanation (AI expands on demand)
+  brief?: Brief           // moments: what the learner knows at this checkpoint
 }
+
+/** Situation at a market-moment checkpoint: only facts known at that time. */
+export interface Brief { label: string; date: string; facts: string[]; note?: string }
 
 export interface Question {
   id: string
