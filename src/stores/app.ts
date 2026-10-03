@@ -13,6 +13,8 @@ export const useApp = defineStore('app', {
     openTerm: null as string | null,
     chatOpen: false,
     chatContext: '',
+    /** null until /api/session has answered. */
+    authed: null as boolean | null,
   }),
   getters: {
     levelProgress: (s) => (ids: string[]) => ids.filter((id) => s.results[id]).length,

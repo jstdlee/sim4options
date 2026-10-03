@@ -2,11 +2,24 @@ import { Hono } from 'hono'
 import { routeAgentRequest } from 'agents'
 import type { Env, Byok } from './env'
 import { chat, clef, TUTOR_SYSTEM } from './ai'
+import { isAuthed, isConfigured, login, logoutCookie } from './auth'
 export { TutorAgent } from './agent'
 
 const app = new Hono<{ Bindings: Env }>()
 
 app.get('/api/health', (c) => c.json({ ok: true, llm: c.env.LLM_MODEL, clef: c.env.CLEF_MODEL }))
+
+/** Login with an access token; sets the session cookie. */
+app.post('/api/login', async (c) => {
+  if (!isConfigured(c.env)) return c.json({ ok: false, error: 'No access token is set on the server.' }, 503)
+  const { token } = await c.req.json<{ token?: string }>().catch(() => ({ token: '' }))
+  const cookie = await login(token ?? '', c.env)
+  if (!cookie) return c.json({ ok: false, error: 'That access token is not valid.' }, 401)
+  c.header('set-cookie', cookie)
+  return c.json({ ok: true })
+})
+app.post('/api/logout', (c) => { c.header('set-cookie', logoutCookie); return c.json({ ok: true }) })
+app.get('/api/session', async (c) => c.json({ ok: await isAuthed(c.req.raw, c.env) }))
 
 /** Clef sparring trader: picks its own answer for a decision step, with probabilities. */
 app.post('/api/clef/spar', async (c) => {
@@ -71,11 +84,17 @@ app.get('/api/mastery/:uid', async (c) => {
   return c.json({ ok: true, mastery: results })
 })
 
+const PUBLIC = new Set(['/api/health', '/api/login', '/api/logout', '/api/session'])
+
 export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext) {
+    const url = new URL(req.url)
+    const isApi = url.pathname.startsWith('/api/') || url.pathname.startsWith('/agents/')
+    if (isApi && !PUBLIC.has(url.pathname) && !(await isAuthed(req, env))) {
+      return Response.json({ ok: false, error: 'Sign in with your access token.' }, { status: 401 })
+    }
     const agentRes = await routeAgentRequest(req, env)
     if (agentRes) return agentRes
-    const url = new URL(req.url)
     if (url.pathname.startsWith('/api/')) return app.fetch(req, env, ctx)
     return env.ASSETS.fetch(req)
   },

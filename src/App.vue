@@ -2,18 +2,20 @@
 import TermSheet from './components/TermSheet.vue'
 import ChatFloat from './components/ChatFloat.vue'
 import LangPicker from './components/LangPicker.vue'
+import { useApp } from './stores/app'
+const app = useApp()
 const links = [['/', 'Journey'], ['/cards', 'Cards'], ['/map', 'Term map'], ['/moments', 'Moments'], ['/sim', 'Simulator'], ['/settings', 'Settings']]
 </script>
 
 <template>
   <header class="top">
     <RouterLink to="/" class="brand" translate="no">Options Quest</RouterLink>
-    <nav aria-label="Main"><RouterLink v-for="[to, label] in links" :key="to" :to="to" class="nav">{{ label }}</RouterLink></nav>
+    <nav v-if="app.authed" aria-label="Main"><RouterLink v-for="[to, label] in links" :key="to" :to="to" class="nav">{{ label }}</RouterLink></nav>
     <LangPicker />
   </header>
   <main><RouterView /></main>
   <TermSheet />
-  <ChatFloat />
+  <ChatFloat v-if="app.authed" />
 </template>
 
 <style scoped>

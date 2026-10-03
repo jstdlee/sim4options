@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useApp, type ByokCfg } from '../stores/app'
+import { useRouter } from 'vue-router'
 
 const app = useApp()
+const router = useRouter()
 const f = reactive<ByokCfg>({ ...app.byok })
 const saved = ref(false)
 const hints: Record<ByokCfg['provider'], string> = {
@@ -10,6 +12,11 @@ const hints: Record<ByokCfg['provider'], string> = {
   openai: 'e.g. gpt-5.1 — your key is sent per request through AI Gateway, never stored on the server.',
   anthropic: 'e.g. claude-sonnet-4-6',
   'google-ai-studio': 'e.g. gemini-2.5-flash',
+}
+async function signOut() {
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {})
+  app.authed = false
+  router.replace('/login')
 }
 function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (saved.value = false), 1800) }
 </script>
@@ -32,6 +39,11 @@ function save() { app.setByok({ ...f }); saved.value = true; setTimeout(() => (s
       <h2>Progress</h2>
       <p class="muted">Learner ID {{ app.uid.slice(0, 8) }}. Progress is stored in this browser and synced to the app database.</p>
       <button class="btn" @click="app.reset()">Reset progress</button>
+    </section>
+    <section class="surface box">
+      <h2>Account</h2>
+      <p class="muted">You are signed in with an access token on this browser.</p>
+      <button class="btn" @click="signOut">Sign out</button>
     </section>
     <p class="muted small">Options Quest is for education only and is not financial advice.</p>
   </div>

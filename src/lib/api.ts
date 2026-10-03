@@ -1,7 +1,14 @@
 import type { Choice } from '@shared/types'
+import { useApp } from '../stores/app'
+import { router } from '../router'
 
 async function post<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  if (r.status === 401) {
+    useApp().authed = false
+    router.push({ path: '/login', query: { next: router.currentRoute.value.fullPath } })
+    throw new Error('Signed out')
+  }
   return r.json() as Promise<T>
 }
 

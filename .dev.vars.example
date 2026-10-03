@@ -1,0 +1,2 @@
+# Copy to .dev.vars for local dev. Comma-separate several tokens.
+ACCESS_TOKEN=replace-with-a-long-random-token

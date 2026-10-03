@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import type { Step } from '@shared/types'
 import TermText from './TermText.vue'
+import MdText from './MdText.vue'
 import ClefBar from './ClefBar.vue'
 import { api, plain, type ClefOut } from '../lib/api'
 import { useApp } from '../stores/app'
@@ -94,7 +95,7 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
       </div>
       <ClefBar v-if="clefOut[idx]?.ok" :probs="clefOut[idx]!.fields.pick?.probs" :choices="step.choices" :answer="step.answer" :ms="clefOut[idx]!.ms" :model="clefOut[idx]!.model" />
       <p v-else-if="clefOut[idx]" class="muted">Clef is unavailable: {{ clefOut[idx]!.error }}</p>
-      <div v-if="explain[idx]" class="explain read"><TermText :text="explain[idx]" /></div>
+      <div v-if="explain[idx]" class="explain read"><MdText :text="explain[idx]" /></div>
     </div>
     <div v-else class="row"><button class="btn" @click="askTutor">Ask the tutor before answering</button></div>
 
@@ -128,7 +129,7 @@ const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
 .choice.wrong { border-color: var(--put); background: color-mix(in srgb, var(--put) 18%, var(--ink)); }
 .verdict { font-weight: 700; }
 .verdict.ok { color: var(--call); } .verdict.bad { color: var(--put); }
-.explain { margin-top: 1rem; padding-left: 1rem; border-left: 3px solid var(--vol); white-space: pre-wrap; }
+.explain { margin-top: 1rem; padding-left: 1rem; border-left: 3px solid var(--vol); }
 .rationale { margin-top: 1.5rem; }
 .grades { margin-top: .7rem; }
 </style>

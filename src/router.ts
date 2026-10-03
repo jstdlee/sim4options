@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useApp } from './stores/app'
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -12,5 +13,16 @@ export const router = createRouter({
     { path: '/moments/:id/:cp', component: () => import('./views/Moment.vue') },
     { path: '/sim', component: () => import('./views/Simulator.vue') },
     { path: '/settings', component: () => import('./views/Settings.vue') },
+    { path: '/login', component: () => import('./views/Login.vue') },
   ],
+})
+
+// Every page needs a session; /login is the only open route.
+router.beforeEach(async (to) => {
+  const app = useApp()
+  if (app.authed === null) {
+    app.authed = await fetch('/api/session').then((r) => r.json()).then((j: any) => !!j.ok).catch(() => false)
+  }
+  if (!app.authed && to.path !== '/login') return { path: '/login', query: to.fullPath === '/' ? {} : { next: to.fullPath } }
+  if (app.authed && to.path === '/login') return '/'
 })

@@ -8,6 +8,8 @@ export interface Env {
   CLEF_FLASH_MODEL: string
   AI_GATEWAY_ID: string
   CF_ACCOUNT_ID: string
+  /** Secret. One or more login tokens, comma-separated. */
+  ACCESS_TOKEN?: string
 }
 
 export interface Byok {
