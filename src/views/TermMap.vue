@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePageContext } from '../lib/context'
 import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -29,6 +30,11 @@ const graph = computed(() => {
   for (const n of nodes) for (const r of TERM_MAP[n.id].related) if (pos[r] && n.id < r) edges.push([n.id, r])
   for (const n of nodes) for (const r of TERM_MAP[n.id].related) if (pos[r] && n.id > r && !TERM_MAP[r].related.includes(n.id)) edges.push([n.id, r])
   return { nodes, edges: edges.map(([a, b]) => ({ a: pos[a], b: pos[b], hot: a === c.id || b === c.id })) }
+})
+
+usePageContext(() => {
+  const t = TERM_MAP[sel.value]
+  return t ? { kind: 'term', label: `Term map · ${t.name}`, text: `Term map, selected term: ${t.name}. ${t.short} Connected terms: ${t.related.map((r) => TERM_MAP[r]?.name ?? r).join(', ')}.` } : null
 })
 </script>
 

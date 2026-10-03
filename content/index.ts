@@ -2,8 +2,8 @@ import { AUTHORED, LEVELS } from './questions'
 import { generate } from '../shared/generator'
 import type { Question } from '../shared/types'
 
-// Target counts per level (≥210 total). Authored first, generated variants fill the rest.
-export const TARGETS: Record<number, number> = { 1: 30, 2: 35, 3: 35, 4: 35, 5: 30, 6: 25, 7: 20 }
+// Target counts per level (420 total). Authored first, generated variants fill the rest.
+export const TARGETS: Record<number, number> = { 1: 60, 2: 70, 3: 70, 4: 70, 5: 60, 6: 50, 7: 40 }
 
 export function buildBank(seed = 42): Record<number, Question[]> {
   const out: Record<number, Question[]> = {}

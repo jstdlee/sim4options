@@ -1,17 +1,38 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, onBeforeUnmount, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { AgentClient } from 'agents/client'
 import MdText from './MdText.vue'
 import FoxSticker from './FoxSticker.vue'
 import { useApp } from '../stores/app'
 
 const app = useApp()
-type Msg = { role: 'user' | 'assistant' | 'error'; text: string }
+const route = useRoute()
+type Msg = { role: 'user' | 'assistant' | 'error'; text: string; ctx?: string }
 const msgs = ref<Msg[]>([])
 const input = ref('')
 const pending = ref(false)
 const log = ref<HTMLElement>()
 let client: AgentClient | null = null
+
+// What is on screen right now. A term card (or a question asked from one) wins over the page.
+const ctx = computed(() => app.pinnedContext ?? app.pageContext)
+const share = ref(true)
+watch(() => ctx.value?.label, () => (share.value = true))
+// Leaving the page drops a term that was pinned from a card.
+watch(() => route.fullPath, () => { if (!app.openTerm) app.pinnedContext = null })
+
+// One-tap questions for what is on screen, so nothing needs typing.
+const quick = computed<string[]>(() => {
+  const c = share.value ? ctx.value : null
+  if (!c) return ['What should I learn next?', 'Explain calls and puts simply', 'What is implied volatility?']
+  if (c.kind === 'question') return c.answered
+    ? ['Why is this the right answer?', 'Why is my pick weaker?', 'What if one number changed?']
+    : ['Give me a hint', 'Explain the terms here', 'What should I look at first?']
+  if (c.kind === 'term') return ['Explain it simply', 'Give me a worked example', 'How do traders use it?']
+  if (c.kind === 'simulator') return ['What are my main risks now?', 'Which Greek matters most here?', 'How would you manage this?']
+  return ['What should I do next here?', 'Summarize where I am', 'Quiz me on this']
+})
 
 function connect() {
   if (client) return
@@ -25,21 +46,17 @@ function connect() {
   })
 }
 const scroll = () => nextTick(() => log.value?.scrollTo({ top: log.value.scrollHeight }))
+watch(() => app.chatOpen, (open) => { if (open) connect() })
 
-watch(() => app.chatOpen, (open) => {
-  if (!open) return
-  connect()
-  if (app.chatContext && !input.value) input.value = app.chatContext.startsWith('Explain the term') ? app.chatContext : 'Why is this the right decision here?'
-})
-
-function send() {
-  const text = input.value.trim()
+function send(q?: string) {
+  const text = (q ?? input.value).trim()
   if (!text || pending.value) return
   connect()
-  msgs.value.push({ role: 'user', text })
+  const c = share.value ? ctx.value : null
+  msgs.value.push({ role: 'user', text, ctx: c?.label })
   pending.value = true
-  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context: app.chatContext, byok: app.byokPayload }))
-  input.value = ''
+  client!.send(JSON.stringify({ type: 'ask', id: crypto.randomUUID(), text, context: c?.text ?? '', byok: app.byokPayload }))
+  if (!q) input.value = ''
   scroll()
 }
 function clear() { msgs.value = []; client?.send(JSON.stringify({ type: 'reset' })) }
@@ -47,35 +64,50 @@ onBeforeUnmount(() => client?.close())
 </script>
 
 <template>
-  <button v-if="!app.chatOpen" class="fab" aria-label="Ask Kon, the tutor" @click="app.chatOpen = true"><img src="/fox/head.webp" alt="" /><span>Ask Kon</span></button>
+  <button v-if="!app.chatOpen" class="kon-fab" aria-label="Ask Kon, the tutor" @click="app.chatOpen = true"><img src="/fox/head.webp" alt="" /><span>Ask Kon</span></button>
   <aside v-else class="chat" aria-label="Tutor chat">
     <header class="row"><img class="av" src="/fox/head.webp" alt="" /><strong class="grow">Kon · tutor</strong>
-      <button class="btn" @click="clear">Clear</button>
-      <button class="btn" @click="app.chatOpen = false">Close</button></header>
-    <p v-if="app.chatContext" class="ctx muted">Using the current question as context.</p>
+      <button class="icon-btn" aria-label="New chat" title="New chat" @click="clear"><i class="fa-solid fa-rotate-left" /></button>
+      <button class="icon-btn" aria-label="Close the chat" title="Close" @click="app.chatOpen = false"><i class="fa-solid fa-xmark" /></button></header>
+    <div v-if="ctx" class="ctx" :class="{ off: !share }">
+      <i :class="['fa-solid', share ? 'fa-eye' : 'fa-eye-slash']" aria-hidden="true" />
+      <span class="grow"><b>{{ share ? 'Kon sees' : 'Not shared' }}:</b> {{ ctx.label }}</span>
+      <button class="icon-btn sm" :aria-label="share ? 'Stop sharing this screen' : 'Share this screen'" :title="share ? 'Stop sharing this screen' : 'Share this screen'" @click="share = !share">
+        <i :class="['fa-solid', share ? 'fa-xmark' : 'fa-plus']" /></button>
+    </div>
     <div ref="log" class="log">
-      <FoxSticker v-if="!msgs.length" class="empty" pose="point" :size="110" say="Ask me anything! “Why a spread and not a call?” “What does vega mean here?”" />
+      <FoxSticker v-if="!msgs.length" class="empty" pose="point" :size="110" :say="share && ctx ? 'I can see what you are looking at. Tap a question below or type your own.' : 'Ask me anything about options.'" />
       <div v-for="(m, i) in msgs" :key="i" :class="['line', m.role]">
         <img v-if="m.role === 'assistant'" class="av" src="/fox/head.webp" alt="" />
-        <div :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" /><template v-else>{{ m.text }}</template></div>
+        <div :class="['msg', m.role]"><MdText v-if="m.role === 'assistant'" :text="m.text" /><template v-else>{{ m.text }}<small v-if="m.ctx" class="about"><i class="fa-solid fa-eye" aria-hidden="true" /> {{ m.ctx }}</small></template></div>
       </div>
       <FoxSticker v-if="pending" class="pending" pose="think" :size="56" say="Thinking…" />
     </div>
-    <form class="row" @submit.prevent="send">
-      <input v-model="input" class="grow" placeholder="Ask about this decision…" aria-label="Message" />
-      <button class="btn primary" :disabled="pending">Send</button>
+    <div v-if="!pending" class="quick" aria-label="Suggested questions">
+      <button v-for="qq in quick" :key="qq" class="chip" @click="send(qq)">{{ qq }}</button>
+    </div>
+    <form class="row" @submit.prevent="send()">
+      <input id="kon-input" v-model="input" class="grow" placeholder="Ask Kon…" aria-label="Message" autocomplete="off" />
+      <button class="btn primary" :disabled="pending || !input.trim()" aria-label="Send"><i class="fa-solid fa-paper-plane" /></button>
     </form>
   </aside>
 </template>
 
 <style scoped>
-.fab { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 30; display: inline-flex; align-items: center; gap: .3rem; background: var(--pop); color: var(--paper); border: 2px solid var(--edge); border-radius: 999px; padding: .25rem 1rem .25rem .3rem; font-weight: 800; box-shadow: var(--shadow); transition: transform .12s ease; }
-.fab img { width: 46px; height: 46px; margin: -10px 0 -4px; transition: transform .2s ease; }
-.fab:hover img { transform: rotate(-12deg) scale(1.1); }
-.fab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--edge); }
+.kon-fab { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 30; display: inline-flex; align-items: center; gap: .3rem; background: var(--pop); color: var(--paper); border: 2px solid var(--edge); border-radius: 999px; padding: .25rem 1rem .25rem .3rem; font-weight: 800; box-shadow: var(--shadow); transition: transform .12s ease; }
+.kon-fab img { width: 46px; height: 46px; margin: -10px 0 -4px; transition: transform .2s ease; }
+.kon-fab:hover img { transform: rotate(-12deg) scale(1.1); }
+.kon-fab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--edge); }
 .chat { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 35; width: min(420px, calc(100vw - 2rem)); height: min(580px, 78vh); display: flex; flex-direction: column; gap: .6rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 18px; padding: .8rem; box-shadow: 5px 5px 0 var(--edge); }
 header .av { width: 34px; height: 34px; }
-.ctx { font-size: .82rem; margin: 0; }
+.ctx { display: flex; align-items: center; gap: .45rem; font-size: .82rem; padding: .3rem .3rem .3rem .65rem; border: 1.5px dashed var(--teal); border-radius: 10px; color: var(--teal); background: color-mix(in srgb, var(--teal) 6%, var(--panel)); }
+.ctx b { font-weight: 800; }
+.ctx span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--paper); }
+.ctx.off { border-color: var(--line); color: var(--muted); background: var(--panel); }
+.ctx.off span { color: var(--muted); }
+.quick { display: flex; flex-wrap: wrap; gap: .35rem; padding: 2px; }
+.quick .chip { white-space: nowrap; font-size: .8rem; }
+.about { display: block; margin-top: .25rem; font-size: .75rem; opacity: .7; font-family: var(--ui); }
 .log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: .6rem; padding: .2rem .3rem .2rem 0; }
 .empty { margin: auto 0; align-items: flex-end; }
 .empty :deep(.bubble) { font-weight: 700; font-size: .88rem; }

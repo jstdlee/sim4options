@@ -1,12 +1,11 @@
 <script setup lang="ts">
+import { usePageContext } from '../lib/context'
 import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref, watch } from 'vue'
 import type { Leg } from '@shared/types'
 import { bs, round2 } from '@shared/bs'
 import PayoffChart from '../components/PayoffChart.vue'
-import { useApp } from '../stores/app'
 
-const app = useApp()
 const S0 = ref(100), iv0 = ref(35), dte0 = ref(45)
 const S = ref(100), iv = ref(35), day = ref(0)
 const preset = ref('bull-call-spread')
@@ -18,7 +17,22 @@ const presets: Record<string, [string, (s: number) => Omit<Leg, 'premium'>[]]> =
   'straddle': ['Long straddle', (s) => [{ type: 'call', side: 1, strike: s }, { type: 'put', side: 1, strike: s }]],
   'iron-condor': ['Iron condor', (s) => [{ type: 'put', side: 1, strike: Math.round(s * 0.85) }, { type: 'put', side: -1, strike: Math.round(s * 0.92) }, { type: 'call', side: -1, strike: Math.round(s * 1.08) }, { type: 'call', side: 1, strike: Math.round(s * 1.15) }]],
   'covered-call': ['Covered call', (s) => [{ type: 'stock', side: 1 }, { type: 'call', side: -1, strike: Math.round(s * 1.08) }]],
+  'bear-call-spread': ['Bear call spread', (s) => [{ type: 'call', side: -1, strike: Math.round(s * 1.05) }, { type: 'call', side: 1, strike: Math.round(s * 1.12) }]],
+  'bull-put-spread': ['Bull put spread', (s) => [{ type: 'put', side: -1, strike: Math.round(s * 0.95) }, { type: 'put', side: 1, strike: Math.round(s * 0.88) }]],
+  'strangle': ['Long strangle', (s) => [{ type: 'put', side: 1, strike: Math.round(s * 0.93) }, { type: 'call', side: 1, strike: Math.round(s * 1.07) }]],
+  'iron-butterfly': ['Iron butterfly', (s) => [{ type: 'put', side: 1, strike: Math.round(s * 0.9) }, { type: 'put', side: -1, strike: s }, { type: 'call', side: -1, strike: s }, { type: 'call', side: 1, strike: Math.round(s * 1.1) }]],
+  'butterfly': ['Call butterfly (1 × 2 × 1)', (s) => [{ type: 'call', side: 1, strike: Math.round(s * 0.95) }, { type: 'call', side: -1, strike: s, qty: 2 }, { type: 'call', side: 1, strike: Math.round(s * 1.05) }]],
+  'protective-put': ['Protective put', (s) => [{ type: 'stock', side: 1 }, { type: 'put', side: 1, strike: Math.round(s * 0.95) }]],
+  'collar': ['Collar', (s) => [{ type: 'stock', side: 1 }, { type: 'put', side: 1, strike: Math.round(s * 0.93) }, { type: 'call', side: -1, strike: Math.round(s * 1.07) }]],
 }
+
+const GROUPS: [string, string[]][] = [
+  ['Bullish', ['long-call', 'bull-call-spread', 'bull-put-spread']],
+  ['Bearish', ['long-put', 'bear-put-spread', 'bear-call-spread']],
+  ['Neutral, earns time decay', ['iron-condor', 'iron-butterfly', 'butterfly']],
+  ['Big move, long volatility', ['straddle', 'strangle']],
+  ['With stock', ['covered-call', 'protective-put', 'collar']],
+]
 
 const legs = ref<Leg[]>([])
 function open() {
@@ -31,15 +45,17 @@ watch([preset, S0, iv0, dte0], open, { immediate: true })
 
 const T = computed(() => Math.max(dte0.value - day.value, 0) / 365)
 const greeks = computed(() => legs.value.reduce((g, l) => {
-  if (l.type === 'stock') return { ...g, delta: g.delta + l.side }
+  const n = l.side * (l.qty ?? 1)
+  if (l.type === 'stock') return { ...g, delta: g.delta + n }
   const r = bs({ S: S.value, K: l.strike!, T: T.value, sigma: iv.value / 100, type: l.type })
-  return { delta: g.delta + l.side * r.delta, gamma: g.gamma + l.side * r.gamma, theta: g.theta + l.side * r.theta, vega: g.vega + l.side * r.vega }
+  return { delta: g.delta + n * r.delta, gamma: g.gamma + n * r.gamma, theta: g.theta + n * r.theta, vega: g.vega + n * r.vega }
 }, { delta: 0, gamma: 0, theta: 0, vega: 0 }))
 const pnl = computed(() => legs.value.reduce((p, l) => {
-  if (l.type === 'stock') return p + l.side * (S.value - l.premium!)
-  return p + l.side * (bs({ S: S.value, K: l.strike!, T: T.value, sigma: iv.value / 100, type: l.type }).price - l.premium!)
+  const n = l.side * (l.qty ?? 1)
+  if (l.type === 'stock') return p + n * (S.value - l.premium!)
+  return p + n * (bs({ S: S.value, K: l.strike!, T: T.value, sigma: iv.value / 100, type: l.type }).price - l.premium!)
 }, 0) * 100)
-const cost = computed(() => legs.value.reduce((c, l) => c + l.side * (l.premium ?? 0), 0) * 100)
+const cost = computed(() => legs.value.reduce((c, l) => c + l.side * (l.qty ?? 1) * (l.premium ?? 0), 0) * 100)
 
 function step(days = 1) {
   const dt = Math.min(days, dte0.value - day.value)
@@ -49,10 +65,11 @@ function step(days = 1) {
   iv.value = Math.max(8, Math.round(iv.value + (iv0.value - iv.value) * 0.05 + (Math.random() - 0.5) * 3))
   day.value += dt
 }
-function ask() {
-  app.chatContext = `Simulator: ${presets[preset.value][0]} opened at spot ${S0.value}, IV ${iv0.value}%, ${dte0.value} DTE. Now day ${day.value}, spot ${S.value}, IV ${iv.value}%. P&L $${pnl.value.toFixed(0)}. Greeks Δ ${greeks.value.delta.toFixed(2)} Θ ${greeks.value.theta.toFixed(3)} ν ${greeks.value.vega.toFixed(3)}.`
-  app.chatOpen = true
-}
+// What Kon sees when the learner opens the chat.
+usePageContext(() => ({
+  kind: 'simulator', label: `Simulator · ${presets[preset.value][0]}`,
+  text: `Simulator: ${presets[preset.value][0]} opened at spot ${S0.value}, IV ${iv0.value}%, ${dte0.value} DTE. Legs: ${legs.value.map((l) => `${l.side > 0 ? 'long' : 'short'} ${l.qty ?? 1}× ${l.type}${l.strike ? ' ' + l.strike : ''} @ ${l.premium}`).join(', ')}. Now day ${day.value}, spot ${S.value}, IV ${iv.value}%. P&L $${pnl.value.toFixed(0)}. Greeks Δ ${greeks.value.delta.toFixed(2)} Γ ${greeks.value.gamma.toFixed(3)} Θ ${greeks.value.theta.toFixed(3)} ν ${greeks.value.vega.toFixed(3)}.`,
+}))
 </script>
 
 <template>
@@ -63,7 +80,7 @@ function ask() {
     <div class="grid">
       <section class="surface">
         <h3>Open a position</h3>
-        <label>Structure<select v-model="preset"><option v-for="(v, k) in presets" :key="k" :value="k">{{ v[0] }}</option></select></label>
+        <label>Structure<select id="sim-preset" v-model="preset"><optgroup v-for="[g, ids] in GROUPS" :key="g" :label="g"><option v-for="k in ids" :key="k" :value="k">{{ presets[k][0] }}</option></optgroup></select></label>
         <label>Entry spot {{ S0 }}<input v-model.number="S0" type="range" min="20" max="500" step="1" /></label>
         <label>Entry IV {{ iv0 }}%<input v-model.number="iv0" type="range" min="10" max="150" step="1" /></label>
         <label>Days to expiry {{ dte0 }}<input v-model.number="dte0" type="range" min="1" max="180" step="1" /></label>
@@ -76,7 +93,6 @@ function ask() {
         <div class="row"><button class="btn" @click="step(1)">+1 day</button><button class="btn" @click="step(7)">+1 week</button><button class="btn" @click="day = dte0">To expiry</button><button class="btn" @click="open">Reset</button></div>
         <p class="pnl" :class="pnl >= 0 ? 'up' : 'down'">{{ pnl >= 0 ? '+' : '−' }}${{ Math.abs(pnl).toFixed(0) }}</p>
         <p class="greeks">Δ {{ greeks.delta.toFixed(2) }} · Γ {{ greeks.gamma.toFixed(3) }} · Θ {{ (greeks.theta * 100).toFixed(1) }}/day · ν {{ (greeks.vega * 100).toFixed(1) }}/pt</p>
-        <button class="btn" @click="ask">Ask the tutor about this position</button>
       </section>
     </div>
     <PayoffChart :legs="legs" :spot="S" :now="{ T, sigma: iv / 100 }" />

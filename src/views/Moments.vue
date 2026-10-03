@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePageContext } from '../lib/context'
 import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref } from 'vue'
 import { MOMENTS } from '../lib/content'
@@ -9,6 +10,11 @@ const tk = ref<string | null>(null)
 const list = computed(() => MOMENTS.filter((m) => !tk.value || m.ticker === tk.value))
 const score = (id: string) => app.results[`moment:${id}`]
 const passed = computed(() => MOMENTS.filter((m) => { const r = score(m.id); return r && r.correct / r.total >= 2 / 3 }).length)
+
+usePageContext(() => ({
+  kind: 'page', label: `Market moments · ${passed.value}/${MOMENTS.length} passed`,
+  text: `Market moments list. Passed ${passed.value} of ${MOMENTS.length}. Moments: ${list.value.map((m) => { const r = score(m.id); return `${m.ticker} ${m.title} (${m.date})${r ? ` ${r.correct}/${r.total}` : ''}` }).join('; ')}.`,
+}))
 </script>
 
 <template>

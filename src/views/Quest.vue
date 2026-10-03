@@ -6,6 +6,7 @@ import TermText from '../components/TermText.vue'
 import StepPlayer from '../components/StepPlayer.vue'
 import PayoffChart from '../components/PayoffChart.vue'
 import { useApp } from '../stores/app'
+import FoxSticker from '../components/FoxSticker.vue'
 
 const route = useRoute(), router = useRouter(), app = useApp()
 const level = computed(() => Number(route.params.level))
@@ -35,49 +36,59 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <div class="wrap" @touchstart.passive="ts" @touchend.passive="te">
+  <div class="wrap narrow" @touchstart.passive="ts" @touchend.passive="te">
     <nav class="crumbs muted" aria-label="Breadcrumb">
       <RouterLink to="/">Journey</RouterLink> / Level {{ level }} · {{ meta?.name }} / {{ i + 1 }} of {{ list.length }}
     </nav>
     <template v-if="q">
-      <div class="row head">
-        <h1 class="grow">{{ q.title }}</h1>
-        <span v-if="app.results[q.id]" class="chip" :class="{ on: app.results[q.id].correct === app.results[q.id].total }">
-          {{ app.results[q.id].correct }}/{{ app.results[q.id].total }}</span>
+      <div class="head">
+        <h1>{{ q.title }}</h1>
+        <span v-if="app.results[q.id]" class="chip score" :class="{ on: app.results[q.id].correct === app.results[q.id].total }">
+          <i class="fa-solid fa-star" aria-hidden="true" />{{ app.results[q.id].correct }}/{{ app.results[q.id].total }}</span>
       </div>
       <div class="row tags"><span v-for="t in q.tags" :key="t" class="chip">{{ t }}</span><span v-if="q.generated" class="chip">practice variant</span></div>
-      <p class="read scenario"><TermText :text="q.scenario" /></p>
 
-      <div v-if="q.legs" class="chart">
-        <button class="btn" @click="showChart = !showChart">{{ showChart ? 'Hide payoff' : 'Show payoff of the textbook answer' }}</button>
-        <PayoffChart v-if="showChart" :legs="q.legs" :spot="q.spot" />
-      </div>
-
-      <StepPlayer :key="q.id" :qid="q.id" :scenario="q.scenario" :steps="q.steps" :terms="q.terms" :rationale="level >= 5" />
+      <StepPlayer :key="q.id" :qid="q.id" :title="q.title" :scenario="q.scenario" :steps="q.steps" :terms="q.terms" :rationale="level >= 5">
+        <p class="read scenario"><TermText :text="q.scenario" /></p>
+        <div v-if="q.legs" class="chart">
+          <button class="btn" :aria-expanded="showChart" @click="showChart = !showChart">
+            <i class="fa-solid fa-chart-line" aria-hidden="true" />{{ showChart ? 'Hide payoff' : 'Show payoff of the textbook answer' }}</button>
+          <PayoffChart v-if="showChart" :legs="q.legs" :spot="q.spot" />
+        </div>
+      </StepPlayer>
 
       <section class="review">
         <h3>Terms in this question</h3>
         <div class="row"><button v-for="t in q.terms" :key="t" class="chip" @click="app.openTerm = t">{{ TERM_MAP[t]?.name ?? t }}</button></div>
       </section>
 
-      <div class="row pager">
-        <button class="btn" :disabled="i === 0" @click="go(-1)">Previous</button>
-        <span class="grow muted center">Swipe or use ← →</span>
-        <button class="btn primary" @click="go(1)">{{ i === list.length - 1 ? 'Next level' : 'Next' }}</button>
+      <div class="pager">
+        <button class="btn" :disabled="i === 0" @click="go(-1)"><i class="fa-solid fa-arrow-left" aria-hidden="true" />Previous</button>
+        <span class="muted hint">Swipe or use ← →</span>
+        <button class="btn primary" @click="go(1)">{{ i === list.length - 1 ? 'Next level' : 'Next' }}<i class="fa-solid fa-arrow-right" aria-hidden="true" /></button>
       </div>
     </template>
-    <p v-else>That question doesn’t exist. <RouterLink to="/">Back to the journey</RouterLink></p>
+    <FoxSticker v-else pose="oops" :size="140" say="That question does not exist." />
   </div>
 </template>
 
 <style scoped>
-.crumbs { font-size: .88rem; margin: .4rem 0 1rem; }
+.crumbs { font-size: .88rem; margin: .4rem 0 .8rem; }
 .crumbs a { color: var(--muted); }
-.tags { margin-bottom: .8rem; }
-.scenario { font-size: 1.15rem; }
-.chart { margin: .5rem 0 1.2rem; display: grid; gap: .6rem; justify-items: start; }
+.head { display: flex; align-items: flex-start; gap: .8rem; }
+.head h1 { flex: 1; margin: 0; }
+.score { margin-top: .5rem; }
+.tags { margin: .6rem 0 0; }
+.scenario { font-size: 1.12rem; margin: 0; }
+.chart { margin-top: .8rem; display: grid; gap: .6rem; justify-items: start; }
 .chart :deep(figure) { width: 100%; }
-.review { margin-top: 2rem; }
-.pager { margin-top: 2rem; position: sticky; bottom: calc(.5rem + env(safe-area-inset-bottom, 0px)); background: var(--ink); padding: .5rem 0; padding-right: 7.5rem; }
-.center { text-align: center; font-size: .85rem; }
+.review { margin-top: 1.6rem; }
+/* Pager: equal buttons at both ends of the column. */
+.pager { margin-top: 1.6rem; display: grid; grid-template-columns: 9.5rem 1fr 9.5rem; align-items: center; gap: .8rem; position: sticky; bottom: calc(.5rem + env(safe-area-inset-bottom, 0px)); background: var(--ink); padding: .5rem 0; }
+.pager .btn { justify-content: center; }
+.hint { text-align: center; font-size: .85rem; }
+@media (max-width: 600px) {
+  .pager { grid-template-columns: 1fr 1fr; padding-right: 0; }
+  .hint { display: none; }
+}
 </style>

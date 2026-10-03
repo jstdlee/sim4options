@@ -3,12 +3,13 @@ import { ref, computed, watch } from 'vue'
 import type { Step } from '@shared/types'
 import TermText from './TermText.vue'
 import MdText from './MdText.vue'
-import FoxSticker from './FoxSticker.vue'
 import ClefBar from './ClefBar.vue'
 import { api, plain, type ClefOut } from '../lib/api'
+import { usePageContext } from '../lib/context'
 import { useApp } from '../stores/app'
+import type { Pose } from './FoxSticker.vue'
 
-const props = defineProps<{ qid: string; scenario: string; steps: Step[]; terms: string[]; rationale?: boolean }>()
+const props = defineProps<{ qid: string; title?: string; kind?: 'question' | 'moment'; scenario: string; steps: Step[]; terms: string[]; rationale?: boolean }>()
 const emit = defineEmits<{ done: [correct: number, total: number] }>()
 const app = useApp()
 
@@ -24,8 +25,37 @@ watch(() => props.qid, () => { idx.value = 0; picks.value = {}; clefOut.value = 
 
 const step = computed(() => props.steps[idx.value])
 const picked = computed(() => picks.value[idx.value])
+const right = computed(() => !!picked.value && picked.value === step.value.answer)
 const finished = computed(() => Object.keys(picks.value).length === props.steps.length)
 const correctCount = computed(() => props.steps.filter((s, i) => picks.value[i] === s.answer).length)
+const label = (id: string) => step.value.choices.find((c) => c.id === id)?.label ?? id
+
+// Kon in the card corner follows what is happening.
+const pose = computed<Pose>(() => {
+  if (busy.value === 'clef' || busy.value === 'grade') return 'think'
+  if (busy.value === 'ai') return 'study'
+  if (!picked.value) return 'smile'
+  if (!right.value) return 'oops'
+  return finished.value && idx.value === props.steps.length - 1 ? 'cheer' : 'laugh'
+})
+
+// What Kon sees when the learner opens the chat.
+usePageContext(() => {
+  const st = step.value
+  if (!st) return null
+  const lines = [
+    `${props.kind === 'moment' ? 'Market moment' : 'Question'}: ${props.title ?? props.qid}`,
+    `Scenario: ${plain(props.scenario)}`,
+    `Step ${idx.value + 1} of ${props.steps.length}: ${plain(st.prompt)}`,
+    `Choices: ${st.choices.map((c) => c.label).join(' | ')}`,
+  ]
+  if (picked.value) {
+    lines.push(`I picked: ${label(picked.value)}. Correct answer: ${label(st.answer)}.`, `Key: ${plain(st.why)}`)
+    const probs = clefOut.value[idx.value]?.fields.pick?.probs
+    if (probs) lines.push(`Clef probabilities: ${st.choices.map((c) => `${c.label} ${Math.round((probs[c.id] ?? 0) * 100)}%`).join(', ')}`)
+  } else lines.push('I have not answered yet. Do not tell me the answer unless I ask; give hints.')
+  return { kind: 'question', label: `${props.title ?? 'Question'} · step ${idx.value + 1}`, text: lines.join('\n'), answered: !!picked.value }
+})
 
 function choose(id: string) {
   if (picked.value) return
@@ -37,7 +67,6 @@ function choose(id: string) {
     emit('done', correctCount.value, props.steps.length)
   }
 }
-const label = (id: string) => step.value.choices.find((c) => c.id === id)?.label ?? id
 
 async function askClef() {
   busy.value = 'clef'
@@ -61,90 +90,111 @@ async function gradeIt() {
   grade.value = await api.grade(plain(props.scenario), decisions, note.value).catch(() => null)
   busy.value = null
 }
-function askTutor() {
-  app.chatContext = `Scenario: ${plain(props.scenario)}\nStep: ${plain(step.value.prompt)}\nChoices: ${step.value.choices.map((c) => c.label).join(' | ')}${picked.value ? `\nI picked: ${label(picked.value)}; correct: ${label(step.value.answer)}` : ''}`
-  app.chatOpen = true
-}
 const yes = (v: unknown) => v === true || v === 'yes' || v === 'true'
 </script>
 
 <template>
-  <div class="player">
-    <ol class="steps" aria-label="Decision steps">
+  <section class="card" :aria-label="title ?? 'Question'">
+    <img class="kon" :src="`/fox/${pose}.webp`" alt="" aria-hidden="true" />
+
+    <div class="context"><slot /></div>
+
+    <ol v-if="steps.length > 1" class="steps" aria-label="Decision steps">
       <li v-for="(s, i) in steps" :key="i">
         <button :class="['dot', { now: i === idx, ok: picks[i] === s.answer, bad: picks[i] && picks[i] !== s.answer }]"
-          :disabled="i > 0 && !picks[i - 1]" @click="idx = i">Step {{ i + 1 }}</button>
+          :disabled="i > 0 && !picks[i - 1]" :aria-current="i === idx ? 'step' : undefined" @click="idx = i">Step {{ i + 1 }}</button>
       </li>
     </ol>
 
     <h3 class="prompt"><TermText :text="step.prompt" /></h3>
-    <div class="choices">
+    <div class="choices" :class="{ three: step.choices.length === 3 }" role="group" aria-label="Choices">
       <button v-for="c in step.choices" :key="c.id" class="choice"
         :class="{ right: picked && c.id === step.answer, wrong: picked === c.id && c.id !== step.answer }"
-        :disabled="!!picked" @click="choose(c.id)">{{ c.label }}</button>
+        :disabled="!!picked" @click="choose(c.id)">
+        <span class="lbl">{{ c.label }}</span>
+        <i v-if="picked && c.id === step.answer" class="fa-solid fa-circle-check" aria-label="correct answer" />
+        <i v-else-if="picked === c.id" class="fa-solid fa-circle-xmark" aria-label="your pick" />
+      </button>
     </div>
 
     <div v-if="picked" class="reveal" aria-live="polite">
-      <FoxSticker v-if="picked === step.answer" class="react" :pose="idx === steps.length - 1 ? 'cheer' : 'laugh'" :size="92">
-        <span class="verdict ok">{{ idx === steps.length - 1 ? 'Correct! All steps done.' : 'Correct!' }}</span>
-      </FoxSticker>
-      <FoxSticker v-else class="react" pose="oops" :size="92">
-        <span class="verdict bad">Not quite. The answer is “{{ label(step.answer) }}”.</span>
-      </FoxSticker>
-      <p class="read"><TermText :text="step.why" /></p>
-      <div class="row">
-        <button class="btn" :disabled="busy === 'clef'" @click="askClef">{{ busy === 'clef' ? 'Asking Clef…' : 'Compare with Clef' }}</button>
-        <button class="btn" :disabled="busy === 'ai'" @click="askExplain">{{ busy === 'ai' ? 'Explaining…' : 'Explain in depth' }}</button>
-        <button class="btn" @click="askTutor"><img class="ico" src="/fox/head.webp" alt="" />Ask the tutor</button>
-        <span class="grow" />
-        <button v-if="idx < steps.length - 1" class="btn primary" @click="idx++">Next step</button>
+      <p class="verdict" :class="right ? 'ok' : 'bad'">
+        <i :class="['fa-solid', right ? 'fa-circle-check' : 'fa-circle-xmark']" aria-hidden="true" />
+        {{ right ? (finished && idx === steps.length - 1 ? 'Correct! All steps done.' : 'Correct!') : `Not quite. The answer is “${label(step.answer)}”.` }}
+      </p>
+      <p class="read why"><TermText :text="step.why" /></p>
+      <div class="actions">
+        <button class="btn" :disabled="busy === 'clef'" @click="askClef">
+          <i class="fa-solid fa-scale-balanced" aria-hidden="true" />{{ busy === 'clef' ? 'Asking Clef…' : 'Compare with Clef' }}</button>
+        <button class="btn" :disabled="busy === 'ai'" @click="askExplain">
+          <i class="fa-solid fa-book-open" aria-hidden="true" />{{ busy === 'ai' ? 'Explaining…' : 'Explain in depth' }}</button>
+        <button v-if="idx < steps.length - 1" class="btn primary" @click="idx++">
+          Next step<i class="fa-solid fa-arrow-right" aria-hidden="true" /></button>
       </div>
-      <FoxSticker v-if="busy === 'clef'" class="wait" pose="think" :size="64" say="Clef is weighing the choices…" />
-      <FoxSticker v-if="busy === 'ai'" class="wait" pose="study" :size="64" say="Reading up on this…" />
       <ClefBar v-if="clefOut[idx]?.ok" :probs="clefOut[idx]!.fields.pick?.probs" :choices="step.choices" :answer="step.answer" :ms="clefOut[idx]!.ms" :model="clefOut[idx]!.model" />
       <p v-else-if="clefOut[idx]" class="muted">Clef is unavailable: {{ clefOut[idx]!.error }}</p>
       <div v-if="explain[idx]" class="explain read"><MdText :text="explain[idx]" /></div>
     </div>
-    <div v-else class="row"><button class="btn" @click="askTutor"><img class="ico" src="/fox/head.webp" alt="" />Ask the tutor before answering</button></div>
 
-    <section v-if="finished && rationale" class="surface rationale">
+    <section v-if="finished && rationale" class="rationale">
       <h3>Explain your reasoning</h3>
       <p class="muted">Clef grades whether you covered direction, volatility and risk.</p>
-      <textarea v-model="note" rows="3" placeholder="e.g. IV was elevated before the print so I used a spread to limit vega…" />
-      <div class="row" style="margin-top:.6rem"><button class="btn primary" :disabled="note.length < 15 || busy === 'grade'" @click="gradeIt">{{ busy === 'grade' ? 'Grading…' : 'Grade my reasoning' }}</button></div>
-      <FoxSticker v-if="busy === 'grade'" class="wait" pose="think" :size="64" say="Grading your reasoning…" />
+      <textarea id="rationale" v-model="note" rows="3" placeholder="e.g. IV was elevated before the print so I used a spread to limit vega…" />
+      <div class="actions"><button class="btn primary" :disabled="note.length < 15 || busy === 'grade'" @click="gradeIt">
+        <i class="fa-solid fa-pen-nib" aria-hidden="true" />{{ busy === 'grade' ? 'Grading…' : 'Grade my reasoning' }}</button></div>
       <div v-if="grade?.ok" class="row grades">
-        <span class="chip" :class="{ on: yes(grade.fields.direction?.value) }">Direction</span>
-        <span class="chip" :class="{ on: yes(grade.fields.volatility?.value) }">Volatility</span>
-        <span class="chip" :class="{ on: yes(grade.fields.risk?.value) }">Risk</span>
+        <span class="chip" :class="{ on: yes(grade.fields.direction?.value) }"><i :class="['fa-solid', yes(grade.fields.direction?.value) ? 'fa-check' : 'fa-minus']" aria-hidden="true" />Direction</span>
+        <span class="chip" :class="{ on: yes(grade.fields.volatility?.value) }"><i :class="['fa-solid', yes(grade.fields.volatility?.value) ? 'fa-check' : 'fa-minus']" aria-hidden="true" />Volatility</span>
+        <span class="chip" :class="{ on: yes(grade.fields.risk?.value) }"><i :class="['fa-solid', yes(grade.fields.risk?.value) ? 'fa-check' : 'fa-minus']" aria-hidden="true" />Risk</span>
         <span class="chip">Quality: {{ grade.fields.quality?.value }}</span>
       </div>
       <p v-else-if="grade" class="muted">Grading is unavailable: {{ grade.error }}</p>
     </section>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.steps { display: flex; gap: .4rem; list-style: none; padding: 0; margin: 0 0 1rem; flex-wrap: wrap; }
+/* One question = one manga panel, Kon sits on its top-right corner. */
+.card { position: relative; display: grid; gap: 1rem; margin-top: 2.6rem; padding: 1.4rem clamp(1rem, 3vw, 1.6rem) 1.4rem; background: var(--panel); border: 2px solid var(--edge); border-radius: 18px; box-shadow: 4px 4px 0 var(--edge); }
+.kon { position: absolute; top: -62px; right: 14px; height: 96px; width: auto; pointer-events: none; filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff) drop-shadow(0 -2px 0 #fff) drop-shadow(2px 3px 0 rgb(26 23 18 / .18)); }
+.context { padding-right: 4.5rem; }
+.context:empty { display: none; }
+.context :deep(> :last-child) { margin-bottom: 0; }
+
+.steps { display: flex; gap: .4rem; list-style: none; padding: 0; margin: 0; flex-wrap: wrap; }
 .dot { border: 2px solid var(--edge); background: var(--panel); border-radius: 999px; padding: .1rem .75rem; font-size: .82rem; font-weight: 700; }
 .dot.now { background: var(--pop); box-shadow: var(--shadow-sm); }
 .dot.ok { background: var(--call); color: #fff; }
 .dot.bad { background: var(--put); color: #fff; }
 .dot:disabled { opacity: .45; }
-.prompt { font-size: 1.2rem; }
-.choices { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin: .8rem 0 1rem; }
-.choice { text-align: left; background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; padding: .8rem .95rem; min-height: 3rem; font-weight: 700; box-shadow: var(--shadow); transition: transform .08s ease, box-shadow .08s ease, background .15s; }
+.prompt { font-size: 1.15rem; margin: 0; white-space: pre-line; }
+
+/* Choices: equal cells. 2 or 4 options → 2 columns, 3 options → 3 columns, one column on phones. */
+.choices { display: grid; gap: .7rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.choices.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choice { display: flex; align-items: center; justify-content: space-between; gap: .6rem; text-align: left; background: var(--panel); border: 2px solid var(--edge); border-radius: 14px; padding: .8rem .95rem; min-height: 3.4rem; font-weight: 700; box-shadow: var(--shadow); transition: transform .08s ease, box-shadow .08s ease, background .15s; }
 .choice:not(:disabled):hover { background: #fff6dc; transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--edge); }
 .choice:not(:disabled):active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--edge); }
-.choice:disabled { cursor: default; opacity: .6; }
+.choice:disabled { cursor: default; opacity: .55; }
 .choice.right { opacity: 1; background: color-mix(in srgb, var(--call) 22%, var(--panel)); }
+.choice.right i { color: var(--call); }
 .choice.wrong { opacity: 1; background: color-mix(in srgb, var(--put) 18%, var(--panel)); }
-.react { margin: .2rem 0 .6rem; }
-.verdict { font-weight: 800; font-size: 1.05rem; }
+.choice.wrong i { color: var(--put); }
+
+.reveal { display: grid; gap: .8rem; }
+.verdict { display: flex; align-items: center; gap: .5rem; margin: 0; font-weight: 800; font-size: 1.05rem; }
 .verdict.ok { color: var(--call); } .verdict.bad { color: var(--put); }
-.wait { margin-top: .8rem; }
-.wait :deep(.bubble) { font-weight: 700; font-size: .9rem; }
-.explain { margin-top: 1rem; padding: .9rem 1.1rem; border: 2px solid var(--edge); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); }
-.rationale { margin-top: 1.5rem; }
-.grades { margin-top: .7rem; }
+.why { margin: 0; }
+/* Actions: equal-width buttons that wrap as a grid. */
+.actions { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); }
+.actions .btn { justify-content: center; }
+.explain { padding: .9rem 1.1rem; border: 2px solid var(--edge); border-radius: 14px; background: var(--ink); }
+.rationale { display: grid; gap: .6rem; padding-top: 1rem; border-top: 2px dashed var(--line); }
+.rationale h3, .rationale p { margin: 0; }
+
+@media (max-width: 600px) {
+  .choices, .choices.three { grid-template-columns: 1fr; }
+  .kon { height: 76px; top: -50px; right: 8px; }
+  .context { padding-right: 3.2rem; }
+}
 </style>

@@ -4,6 +4,15 @@ import { load, save } from '../lib/storage'
 export interface ByokCfg { provider: 'workers-ai' | 'openai' | 'anthropic' | 'google-ai-studio'; model: string; key: string }
 type Result = { correct: number; total: number; at: number }
 
+/** What Kon sees: a short label for the chip and the full text sent with each message. */
+export interface ScreenContext {
+  kind: 'question' | 'term' | 'moment' | 'simulator' | 'page'
+  label: string
+  text: string
+  /** Question state, used to pick the quick prompts. */
+  answered?: boolean
+}
+
 export const useApp = defineStore('app', {
   state: () => ({
     uid: load<string>('oq.uid', '') || (() => { const id = crypto.randomUUID(); save('oq.uid', id); return id })(),
@@ -12,7 +21,12 @@ export const useApp = defineStore('app', {
     byok: load<ByokCfg>('oq.byok', { provider: 'workers-ai', model: '', key: '' }),
     openTerm: null as string | null,
     chatOpen: false,
-    chatContext: '',
+    /** Active page language (Google Translate); 'en' = original. */
+    lang: 'en',
+    /** Set by the current page (question, simulator, …). */
+    pageContext: null as ScreenContext | null,
+    /** Set while a term card is open, or kept when the learner asks Kon from it. Wins over pageContext. */
+    pinnedContext: null as ScreenContext | null,
     /** null until /api/session has answered. */
     authed: null as boolean | null,
   }),

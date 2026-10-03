@@ -15,19 +15,23 @@ export class TutorAgent extends Agent<Env, TutorState> {
     if (data.type === 'reset') { this.setState({ history: [] }); return }
     if (data.type !== 'ask') return
 
-    const ctx: string = data.context ? `\n\nCurrent screen context:\n${String(data.context).slice(0, 4000)}` : ''
-    const history: ChatMsg[] = [...this.state.history, { role: 'user' as const, content: String(data.text).slice(0, 4000) }].slice(-16)
+    // The screen context travels inside the user turn, so each question keeps its own context in history
+    // and the newest one always wins over older chats.
+    const screen = data.context ? String(data.context).slice(0, 4000) : ''
+    const question = String(data.text).slice(0, 4000)
+    const userTurn = screen ? `What I see on screen now:\n${screen}\n\nMy question (about the screen above): ${question}` : question
+    const history: ChatMsg[] = [...this.state.history, { role: 'user' as const, content: userTurn }].slice(-16)
 
     try {
       // Fast intent routing with Clef-flash: decide which term card to surface alongside the answer.
-      const route = await clef(this.env, `${data.text}${ctx}`.slice(0, 6000), {
+      const route = await clef(this.env, `${question}\n\n${screen}`.slice(0, 6000), {
         topic: {
           type: 'choice', instructions: 'Which concept is the learner mainly asking about?',
           criteria: { greeks: 'delta, gamma, theta, vega, rho', volatility: 'IV, IV rank, IV crush, VIX, skew', strategy: 'spreads, straddles, condors, covered calls', basics: 'calls, puts, strikes, premium, moneyness', management: 'rolling, assignment, sizing, exits', other: 'anything else' },
         },
       }, true)
 
-      const reply = await chat(this.env, [{ role: 'system', content: TUTOR_SYSTEM + ctx }, ...history], data.byok as Byok | undefined)
+      const reply = await chat(this.env, [{ role: 'system', content: TUTOR_SYSTEM + '\nAlways answer about the screen in the latest message; earlier messages may be about other screens.' }, ...history], data.byok as Byok | undefined)
       this.setState({ history: [...history, { role: 'assistant' as const, content: reply }].slice(-16) })
       conn.send(JSON.stringify({ type: 'answer', id: data.id, text: reply, topic: route.ok ? route.fields.topic?.value : null }))
     } catch (e: any) {

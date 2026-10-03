@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePageContext } from '../lib/context'
 import FoxSticker from '../components/FoxSticker.vue'
 import { computed, ref } from 'vue'
 import { TERMS, ALL_TAGS, TERM_MAP } from '../lib/content'
@@ -11,6 +12,11 @@ const list = computed(() => TERMS.filter((t) =>
   (!q.value || (t.name + t.short).toLowerCase().includes(q.value.toLowerCase())) &&
   (!tags.value.length || tags.value.every((x) => t.tags.includes(x))) &&
   (!weakOnly.value || (app.mastery(t.id) ?? 0) < 0.7)))
+
+usePageContext(() => ({
+  kind: 'page', label: `Skill cards · ${list.value.length} shown`,
+  text: `Skill cards page. Search "${q.value}", tags ${tags.value.join(', ') || 'none'}${weakOnly.value ? ', only cards that need review' : ''}. Cards shown: ${list.value.slice(0, 12).map((t) => t.name).join(', ')}${list.value.length > 12 ? '…' : ''}.`,
+}))
 </script>
 
 <template>

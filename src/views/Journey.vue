@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { BANK, LEVELS, TOTAL, MOMENTS, TERMS } from '../lib/content'
 import { useApp } from '../stores/app'
 import FoxSticker from '../components/FoxSticker.vue'
+import { usePageContext } from '../lib/context'
 
 const app = useApp()
 const done = (n: number) => app.levelProgress(BANK[n].map((q) => q.id))
@@ -10,6 +11,11 @@ const firstOpen = (n: number) => Math.max(0, BANK[n].findIndex((q) => !app.resul
 const complete = (n: number) => done(n) >= BANK[n].length
 const next = computed(() => LEVELS.find((l) => !complete(l.n)) ?? LEVELS[0])
 const started = computed(() => LEVELS.some((l) => done(l.n) > 0))
+
+usePageContext(() => ({
+  kind: 'page', label: `Journey · next: level ${next.value.n}`,
+  text: `Journey page. Progress: ${LEVELS.map((l) => `L${l.n} ${l.name} ${done(l.n)}/${BANK[l.n].length}`).join('; ')}. Next level: ${next.value.n} ${next.value.name}.`,
+}))
 
 // Speed lines that burst from behind Kon (fixed lengths, so the banner looks the same on every visit).
 const RAYS = Array.from({ length: 36 }, (_, i) => {
@@ -29,7 +35,7 @@ const RAYS = Array.from({ length: 36 }, (_, i) => {
       <div class="dots" aria-hidden="true" />
       <div class="copy">
         <h1>Learn options <span class="mark">one decision</span> at a time.</h1>
-        <p class="read">{{ TOTAL }} questions in seven levels, {{ TERMS.length }} linked terms and {{ MOMENTS.length }} real market moments. Compare every decision with Clef, Cloudflare’s decision model, and ask the tutor why.</p>
+        <p class="read">{{ TOTAL }} questions in seven levels, {{ TERMS.length }} linked terms and {{ MOMENTS.length }} real market moments. Compare every decision with Clef, Cloudflare’s decision model, and ask Kon why.</p>
         <RouterLink class="btn primary cta" :to="`/quest/${next.n}/${firstOpen(next.n)}`">
           {{ started ? 'Continue' : 'Start' }} level {{ next.n }} · {{ next.name }}
         </RouterLink>
@@ -54,7 +60,7 @@ const RAYS = Array.from({ length: 36 }, (_, i) => {
         <FoxSticker v-if="complete(l.n)" class="stamp" pose="thumbs" :size="64" alt="Level complete" />
       </li>
       <li class="rung final">
-        <span class="n">★</span>
+        <span class="n"><i class="fa-solid fa-star" aria-hidden="true" /></span>
         <div class="grow"><h2>Final test: market moments</h2><p class="muted">Trade through real historical events, checkpoint by checkpoint.</p></div>
         <RouterLink class="btn" to="/moments">Open</RouterLink>
         <FoxSticker class="stamp" pose="surprised" :size="64" />
@@ -82,7 +88,8 @@ const RAYS = Array.from({ length: 36 }, (_, i) => {
 .say::after { left: 24px; top: auto; bottom: -8px; transform: none; border-width: 9px 6px 0 6px; border-color: var(--panel) transparent transparent; }
 
 .ladder { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
-.rung { position: relative; display: flex; gap: 1rem; align-items: center; padding: 1rem 1.1rem; border: 2px solid var(--edge); border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); flex-wrap: wrap; }
+.rung { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) 10.5rem; gap: 1rem; align-items: center; padding: 1rem 1.1rem; border: 2px solid var(--edge); border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
+.rung > .btn { justify-content: center; }
 .rung.now { background: #fff6dc; }
 .rung h2 { font-size: 1.15rem; margin: 0; }
 .rung p { margin: .1rem 0 .5rem; }
@@ -98,5 +105,7 @@ const RAYS = Array.from({ length: 36 }, (_, i) => {
   .kon { min-height: 0; justify-content: flex-end; margin-top: -.5rem; }
   .kon :deep(img) { height: 150px !important; }
   .say { top: 10%; right: auto; left: 0; }
+  .rung { grid-template-columns: auto minmax(0, 1fr); }
+  .rung > .btn { grid-column: 1 / -1; }
 }
 </style>

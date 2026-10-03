@@ -15,33 +15,40 @@ const go = (d: number) => { const n = idx.value + d; if (MOMENTS[n]) { finished.
 </script>
 
 <template>
-  <div class="wrap">
-    <nav class="muted crumbs"><RouterLink to="/moments">Moments</RouterLink> / {{ m?.ticker }}</nav>
+  <div class="wrap narrow">
+    <nav class="muted crumbs" aria-label="Breadcrumb"><RouterLink to="/moments">Moments</RouterLink> / {{ m?.ticker }}</nav>
     <template v-if="m">
-      <h1>{{ m.ticker }}: {{ m.title }}</h1>
+      <h1><span class="tk">{{ m.ticker }}</span> {{ m.title }}</h1>
       <p class="read muted">{{ m.date }}. {{ m.summary }}</p>
-      <ol class="timeline">
-        <li v-for="cp in m.checkpoints" :key="cp.label"><strong>{{ cp.label }}</strong> <span class="muted">{{ cp.date }}</span></li>
-      </ol>
-      <StepPlayer :key="m.id" :qid="`moment:${m.id}`" :scenario="`${m.ticker} ${m.date}: ${m.summary}`" :steps="steps" :terms="m.terms" rationale @done="(c, t) => (finished = { c, t })" />
+      <StepPlayer :key="m.id" :qid="`moment:${m.id}`" kind="moment" :title="`${m.ticker}: ${m.title}`" :scenario="`${m.ticker} ${m.date}: ${m.summary}`" :steps="steps" :terms="m.terms" rationale @done="(c, t) => (finished = { c, t })">
+        <ol class="timeline" aria-label="Checkpoints">
+          <li v-for="cp in m.checkpoints" :key="cp.label"><i class="fa-solid fa-location-dot" aria-hidden="true" /><strong>{{ cp.label }}</strong> <span class="muted">{{ cp.date }}</span></li>
+        </ol>
+      </StepPlayer>
       <section v-if="finished" class="surface outcome">
-        <h2>{{ finished.c / finished.t >= 2 / 3 ? 'Passed' : 'Not passed yet' }} · {{ finished.c }}/{{ finished.t }}</h2>
+        <h2><i :class="['fa-solid', finished.c / finished.t >= 2 / 3 ? 'fa-trophy' : 'fa-rotate-right']" aria-hidden="true" />
+          {{ finished.c / finished.t >= 2 / 3 ? 'Passed' : 'Not passed yet' }} · {{ finished.c }}/{{ finished.t }}</h2>
         <p class="read"><TermText :text="m.outcome" /></p>
       </section>
-      <div class="row pager">
-        <button class="btn" :disabled="idx === 0" @click="go(-1)">Previous moment</button>
-        <span class="grow" />
-        <button class="btn primary" :disabled="idx === MOMENTS.length - 1" @click="go(1)">Next moment</button>
+      <div class="pager">
+        <button class="btn" :disabled="idx === 0" @click="go(-1)"><i class="fa-solid fa-arrow-left" aria-hidden="true" />Previous</button>
+        <span />
+        <button class="btn primary" :disabled="idx === MOMENTS.length - 1" @click="go(1)">Next moment<i class="fa-solid fa-arrow-right" aria-hidden="true" /></button>
       </div>
     </template>
-    <p v-else>Moment not found. <RouterLink to="/moments">See all moments</RouterLink></p>
   </div>
 </template>
 
 <style scoped>
-.crumbs { font-size: .88rem; margin: .4rem 0 1rem; }
-.timeline { display: flex; gap: 1.2rem; flex-wrap: wrap; padding-left: 1.1rem; margin: 0 0 1.4rem; }
+.crumbs { font-size: .88rem; margin: .4rem 0 .8rem; }
+.crumbs a { color: var(--muted); }
+h1 { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.tk { font-size: .55em; padding: .2rem .5rem; border: 2px solid var(--edge); border-radius: 8px; background: var(--pop); }
+.timeline { display: flex; gap: .4rem 1.2rem; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+.timeline i { color: var(--fox); margin-right: .3rem; }
 .outcome { margin-top: 1.5rem; }
-.pager { margin-top: 2rem; padding-right: 7.5rem; }
-:deep(.prompt) { white-space: pre-line; }
+.outcome h2 { display: flex; gap: .5rem; align-items: center; }
+.pager { margin-top: 1.6rem; display: grid; grid-template-columns: 9.5rem 1fr 9.5rem; gap: .8rem; }
+.pager .btn { justify-content: center; }
+@media (max-width: 600px) { .pager { grid-template-columns: 1fr 1fr; } .pager span { display: none; } }
 </style>

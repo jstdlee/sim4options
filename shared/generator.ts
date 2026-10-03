@@ -1,6 +1,6 @@
 // Parametric question generator. Same template + new numbers = fresh practice.
 import type { Question, Step } from './types'
-import { bs, expectedMove, round2 } from './bs'
+import { bs, expectedMove, payoffAtExpiry, round2 } from './bs'
 
 function rng(seed: number) {
   let a = seed >>> 0
@@ -15,7 +15,7 @@ function rng(seed: number) {
 type R = () => number
 const pick = <T,>(r: R, a: T[]) => a[Math.floor(r() * a.length)]
 const int = (r: R, lo: number, hi: number) => Math.floor(lo + r() * (hi - lo + 1))
-const money = (x: number) => `${x < 0 ? '−' : ''}$${Math.abs(round2(x)).toFixed(2)}`
+const money = (x: number) => `${x < 0 ? '−' : ''}$${Math.abs(round2(x)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 function shuffle<T>(r: R, a: T[]): T[] {
   const b = [...a]
@@ -59,6 +59,19 @@ const L1: Tpl[] = [
       scenario: `You buy ${n} contract(s) quoted at ${money(q)}.`,
       steps: [numStep(r, 'Total cost?', q * 100 * n, [q * n, q * 10 * n, q * 100], '× 100 shares per contract.')] }
   },
+  (r, id) => {
+    const type = pick(r, ['call', 'put'] as const), K = int(r, 20, 200), ST = K + int(r, 1, 12) * pick(r, [1, -1])
+    const p = round2(0.5 + r() * 4), n = int(r, 1, 3)
+    const iv = type === 'call' ? Math.max(ST - K, 0) : Math.max(K - ST, 0)
+    const pl = (iv - p) * 100 * n
+    return { id, level: 1, title: 'Value at expiry', terms: ['expiration', 'intrinsic', type, 'multiplier'], tags: ['basics'], spot: ST, generated: true,
+      legs: [{ type, side: 1, strike: K, premium: p, qty: n }],
+      scenario: `You bought ${n} $${K} [[${type}]] contract(s) for ${money(p)} each. At [[expiration]] the stock closes at $${ST}.`,
+      steps: [
+        numStep(r, 'Value per share at expiry?', iv, [iv > 0 ? iv - p : Math.abs(ST - K), p, iv + p], iv > 0 ? `Only intrinsic is left: ${type === 'call' ? `${ST} − ${K}` : `${K} − ${ST}`}.` : 'OTM at expiry: it expires worthless.'),
+        numStep(r, 'Total P&L?', pl, [iv * 100 * n, (iv - p) * 100, -pl, -p * 100 * n], `(${money(iv)} − ${money(p)}) × 100 × ${n}.`),
+      ] }
+  },
 ]
 
 const L2: Tpl[] = [
@@ -88,6 +101,19 @@ const L2: Tpl[] = [
       scenario: `Stock $${S}, IV ${Math.round(iv * 100)}%, ${days} days.`,
       steps: [numStep(r, '1σ expected move ≈ ±', em, [S * iv, em * 2, S * iv * days / 365], 'S × IV × √(days/365).')] }
   },
+  (r, id) => {
+    const S = int(r, 30, 300), K = S + pick(r, [-10, -5, 0, 5, 10]), C = round2(Math.max(S - K, 0) + 1 + r() * 5)
+    const P = C - S + K
+    return { id, level: 2, title: 'Put-call parity drill', terms: ['put-call-parity'], tags: ['pricing'], spot: S, generated: true,
+      scenario: `Stock $${S}. The $${K} call costs ${money(C)}. Ignore rates and dividends.`,
+      steps: [numStep(r, `Fair price of the $${K} put?`, P, [C + S - K, C, C / 2 + Math.abs(S - K), C * 2], `Put = call − stock + strike = ${money(C)} − ${S} + ${K}.`)] }
+  },
+  (r, id) => {
+    const v0 = round2(1.5 + r() * 6), th = round2(0.02 + r() * 0.1), n = pick(r, [3, 5, 7, 10])
+    return { id, level: 2, title: 'Theta drill', terms: ['theta'], tags: ['greeks', 'time'], generated: true,
+      scenario: `Long option worth ${money(v0)}, theta −${th.toFixed(2)} per day. Price and IV stay flat for ${n} days.`,
+      steps: [numStep(r, 'Approximate value then (theta held constant)?', v0 - th * n, [v0 - th, v0 + th * n, th * n], `${money(v0)} − ${n} × ${th.toFixed(2)}. Real theta grows a little each day.`)] }
+  },
 ]
 
 const L3: Tpl[] = [
@@ -107,6 +133,16 @@ const L3: Tpl[] = [
       steps: [
         numStep(r, 'Effective purchase price if assigned?', K - p, [K, K + p, S - p], 'Strike − premium received.'),
         numStep(r, 'Cash to reserve per contract?', K * 100, [K, S * 100, p * 100], 'Strike × 100.'),
+      ] }
+  },
+  (r, id) => {
+    const E = int(r, 20, 200), K = E + pick(r, [2, 5, 10]), c = round2(0.3 + r() * 3)
+    return { id, level: 3, title: 'Covered call drill', terms: ['covered-call', 'max-profit', 'breakeven'], tags: ['income'], spot: E, generated: true,
+      legs: [{ type: 'stock', side: 1, premium: E }, { type: 'call', side: -1, strike: K, premium: c }],
+      scenario: `You own 100 shares at $${E} and sell the $${K} call for ${money(c)}.`,
+      steps: [
+        numStep(r, 'Max profit per share if called away?', K - E + c, [c, K - E, K - E - c], `(${K} − ${E}) + ${money(c)}.`),
+        numStep(r, 'Downside breakeven?', E - c, [E + c, E, K - c], 'Entry − premium.'),
       ] }
   },
 ]
@@ -140,6 +176,18 @@ const L4: Tpl[] = [
       scenario: `Buy the $${S} straddle for ${money(c)} total.`,
       steps: [numStep(r, 'Upper breakeven?', S + c, [S + c / 2, S, S + 2 * c], 'Strike + total premium.')] }
   },
+  (r, id) => {
+    const S = int(r, 50, 400), w = pick(r, [5, 10]), K1 = S - pick(r, [5, 10, 15]), K2 = K1 - w
+    const cr = round2(w * (0.15 + r() * 0.25))
+    return { id, level: 4, title: 'Bull put spread math', terms: ['bull-put-spread', 'credit-spread', 'breakeven'], tags: ['spread', 'bullish'], spot: S, generated: true,
+      legs: [{ type: 'put', side: -1, strike: K1, premium: cr + 0.5 }, { type: 'put', side: 1, strike: K2, premium: 0.5 }],
+      scenario: `Stock $${S}. Sell the ${K1}/${K2} put spread for a ${money(cr)} credit.`,
+      steps: [
+        numStep(r, 'Max profit (per share)?', cr, [w, w - cr, cr * 2], 'Credit received.'),
+        numStep(r, 'Max loss?', w - cr, [w, cr, w + cr], 'Width − credit.'),
+        numStep(r, 'Breakeven?', K1 - cr, [K2 + cr, K1, K1 + cr], 'Short strike − credit.'),
+      ] }
+  },
 ]
 
 // Rule matrix: (trend, IV rank, event) → structure
@@ -167,6 +215,26 @@ const L5: Tpl[] = [
         { prompt: 'Best-fit structure?', choices, answer: choices.find((c) => c.label === right)!.id, why: table[key][1] + (rsi > 70 || rsi < 30 ? ` RSI ${rsi} is stretched: size smaller.` : '') },
       ] }
   },
+  (r, id) => {
+    const ev = pick(r, ['earnings', 'fomc', 'cpi'] as const), S = int(r, 50, 500)
+    const pct = ev === 'earnings' ? pick(r, [3, 4, 5, 6, 8]) : pick(r, [1, 1.5, 2])
+    const st = round2(S * pct / 100 * (0.9 + r() * 0.2)), m = st / S * 100
+    const what = { earnings: 'Earnings are', fomc: 'The FOMC decision is', cpi: 'CPI prints' }[ev]
+    return { id, level: 5, title: 'Event implied move', terms: [ev, 'expected-move', 'straddle'], tags: ['events'], spot: S, generated: true,
+      scenario: `Stock $${S}. ${what} tomorrow. The nearest ATM [[straddle]] costs ${money(st)}.`,
+      steps: [
+        numStep(r, 'Lower edge of the implied range?', S - st, [S - st / 2, S - 2 * st, S + st], 'Spot − straddle price ≈ the market\'s expected move down.'),
+        numStep(r, 'Implied move as % of spot?', m, [m / 2, m * 2, m + 1], `${money(st)} ÷ $${S}.`, (x) => `${x.toFixed(1)}%`),
+        { prompt: 'You expect a smaller move than this. Lean?', choices: [{ id: 'sell', label: 'Sell premium with defined risk (iron condor)' }, { id: 'buy', label: 'Buy the straddle' }], answer: 'sell',
+          why: 'If the real move is smaller than the price, straddle buyers lose and defined-risk sellers win.' },
+      ] }
+  },
+  (r, id) => {
+    const P = int(r, 30, 300), a = round2(P * (0.01 + r() * 0.03)), k = pick(r, [1.5, 2, 3])
+    return { id, level: 5, title: 'ATR stop drill', terms: ['atr', 'stop-loss'], tags: ['indicator', 'risk'], spot: P, generated: true,
+      scenario: `Bullish entry at $${P}. ATR(14) is ${money(a)}. Your rule: stop at ${k} × ATR below entry.`,
+      steps: [numStep(r, 'Stop level?', P - k * a, [P - a, P + k * a, P - 2 * k * a], `${P} − ${k} × ${money(a)}.`)] }
+  },
 ]
 
 const L6: Tpl[] = [
@@ -176,6 +244,30 @@ const L6: Tpl[] = [
     return { id, level: 6, title: 'Sizing drill', terms: ['position-sizing'], tags: ['risk'], generated: true,
       scenario: `$${acct.toLocaleString()} account, ${pct}% risk per trade, $${risk} max loss per contract.`,
       steps: [numStep(r, 'Max contracts?', n, [n + 1, n * 2, Math.max(n - 1, 0) === n ? n + 2 : Math.max(n - 1, 0)], 'floor(account × % ÷ risk per contract).', (x) => String(x))] }
+  },
+  (r, id) => {
+    const K = int(r, 30, 250), K2 = K - pick(r, [2, 5]), c0 = round2(0.8 + r() * 2), B = round2(1 + r() * 6)
+    let N = round2(B + r() * 1.6 - 0.5)
+    if (Math.abs(N - B) < 0.05) N = round2(N + 0.25)
+    const net = N - B, fmtCD = (x: number) => (x >= 0 ? `${money(x)} credit` : `${money(-x)} debit`)
+    return { id, level: 6, title: 'Roll math', terms: ['roll', 'cash-secured-put'], tags: ['management'], generated: true,
+      scenario: `You sold the $${K} put for ${money(c0)}. It is tested. Roll down and out: buy it back for ${money(B)}, sell the later $${K2} put for ${money(N)}.`,
+      steps: [
+        numStep(r, 'Net of the roll?', net, [-net, N + B, N], `${money(N)} − ${money(B)}.`, fmtCD),
+        numStep(r, 'New breakeven at expiry?', K2 - (c0 + net), [K2 - c0, K - (c0 + net), K2 + c0 + net], `New strike − total credits (${money(c0)} ${net >= 0 ? '+' : '−'} ${money(Math.abs(net))}).`),
+      ] }
+  },
+  (r, id) => {
+    const pop = pick(r, [60, 65, 70, 75, 80, 85]), win = pick(r, [100, 120, 150, 200]), loss = pick(r, [200, 300, 350, 400, 500])
+    const evv = (pop / 100) * win - (1 - pop / 100) * loss
+    const sign = Math.abs(evv) < 0.5 ? 'zero' : evv > 0 ? 'pos' : 'neg'
+    return { id, level: 6, title: 'Expected value drill', terms: ['expected-value', 'probability-of-profit'], tags: ['risk'], generated: true,
+      scenario: `A trade wins ${pop}% of the time. Win = +$${win}, loss = −$${loss}.`,
+      steps: [
+        numStep(r, 'Expected value per trade?', evv, [(pop / 100) * win, win - loss, -evv], `${pop / 100} × ${win} − ${round2(1 - pop / 100)} × ${loss}.`),
+        { prompt: 'So the edge is…', choices: [{ id: 'pos', label: 'Positive' }, { id: 'zero', label: 'About zero' }, { id: 'neg', label: 'Negative' }], answer: sign,
+          why: 'A high win rate is not enough: the size of losses matters as much.' },
+      ] }
   },
 ]
 
@@ -197,6 +289,27 @@ const L7: Tpl[] = [
     return { id, level: 7, title: 'Earnings straddle sim', terms: ['iv-crush', 'straddle'], tags: ['simulator', 'events'], spot: S, generated: true,
       scenario: `ATM $${S} straddle costs ${money(before)} (IV ${Math.round(iv1 * 100)}%). After earnings stock moves +${Math.round(mv * 100)}% and IV drops to ${Math.round(iv2 * 100)}%.`,
       steps: [numStep(r, 'Straddle P&L per share?', after - before, [S * mv, before, -before], 'New value (intrinsic + crushed extrinsic) − cost.')] }
+  },
+  (r, id) => {
+    const S = int(r, 100, 500), w = pick(r, [5, 10]), gap = pick(r, [10, 15, 20]), cr = round2(w * (0.2 + r() * 0.25))
+    const ps = S - gap, cs = S + gap
+    const legs = [
+      { type: 'put' as const, side: 1 as const, strike: ps - w, premium: 0.5 }, { type: 'put' as const, side: -1 as const, strike: ps, premium: 0.5 + cr / 2 },
+      { type: 'call' as const, side: -1 as const, strike: cs, premium: 0.5 + cr / 2 }, { type: 'call' as const, side: 1 as const, strike: cs + w, premium: 0.5 },
+    ]
+    const ST = S + int(r, -(gap + w + 5), gap + w + 5)
+    const pl = payoffAtExpiry(legs, ST)
+    return { id, level: 7, title: 'Condor at expiry', terms: ['iron-condor'], tags: ['simulator', 'spread'], spot: S, generated: true, legs,
+      scenario: `Simulator: ${ps - w}/${ps}/${cs}/${cs + w} iron condor on a $${S} stock for a ${money(cr)} credit. Advance to expiry: it closes at $${ST}.`,
+      steps: [numStep(r, 'P&L per share?', pl, [cr, -(w - cr), -pl, pl - cr], 'Credit − value of any spread that finished ITM (capped at the width).')] }
+  },
+  (r, id) => {
+    const S = int(r, 50, 400), K = S + pick(r, [-10, -5, 0, 5, 10]), iv = int(r, 20, 60) / 100, days = pick(r, [14, 30, 60]), n = int(r, 1, 10)
+    const d = round2(bs({ S, K, T: days / 365, sigma: iv, type: 'call' }).delta)
+    const sh = Math.round(n * d * 100)
+    return { id, level: 7, title: 'Delta hedge drill', terms: ['delta-neutral', 'hedging', 'delta'], tags: ['simulator', 'greeks'], spot: S, generated: true,
+      scenario: `Simulator: long ${n} × $${K} calls, stock $${S}, IV ${Math.round(iv * 100)}%, ${days} DTE. Model delta ${d.toFixed(2)} per share.`,
+      steps: [numStep(r, 'Shares to short to be delta-neutral?', sh, [n * 100, Math.round(d * 100), Math.round(n * (1 - d) * 100)], `${n} × ${d.toFixed(2)} × 100.`, (x) => String(Math.round(x)))] }
   },
 ]
 

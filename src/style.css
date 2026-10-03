@@ -41,7 +41,10 @@ h3 { font-size: 1.08rem; font-weight: 800; }
 p { margin: 0 0 .75rem; }
 .read { font-family: var(--read); font-size: 1.04rem; line-height: 1.75; max-width: 68ch; }
 .muted { color: var(--muted); }
-.wrap { max-width: 980px; margin: 0 auto; padding: 1rem 1.1rem 6rem; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 1rem 1.1rem 7rem; }
+/* Reading column for questions and moments: one width for card, buttons and pager. */
+.wrap.narrow { max-width: 760px; }
+.btn i, .chip i { font-size: .9em; }
 .mark { background: linear-gradient(transparent 55%, var(--pop) 55%, var(--pop) 92%, transparent 92%); padding: 0 .1em; }
 
 /* Buttons: ink border + hard offset shadow; press pushes the button into its shadow. */
@@ -68,6 +71,12 @@ input[type='range'] { accent-color: var(--fox); border: 0; padding: 0; backgroun
 input[type='checkbox'] { accent-color: var(--fox); }
 .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .grow { flex: 1; }
+
+/* Icon-only button (Font Awesome). Always has aria-label + title. */
+.icon-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; flex: none; border: 2px solid transparent; border-radius: 10px; background: transparent; color: var(--paper); font-size: 1.05rem; text-decoration: none; transition: background .15s, border-color .15s; }
+.icon-btn:hover { background: #fff6dc; border-color: var(--edge); }
+.icon-btn.on, .icon-btn.router-link-active { background: var(--pop); border-color: var(--edge); box-shadow: var(--shadow-sm); }
+.icon-btn.sm { width: 28px; height: 28px; font-size: .85rem; border-radius: 8px; }
 
 /* Page title with a Kon sticker on the right. */
 .phead { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin: .6rem 0 .4rem; }
