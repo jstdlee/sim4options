@@ -90,11 +90,13 @@ export async function chat(env: Env, messages: ChatMsg[], byok?: Byok | null, ma
     return text
   }
   if (byok?.key && byok.provider !== 'workers-ai') {
-    const url = `https://gateway.ai.cloudflare.com/v1/${env.CF_ACCOUNT_ID}/${env.AI_GATEWAY_ID}/compat/chat/completions`
-    const res = await fetch(url, {
-      method: 'POST',
+    // Through the AI binding, so the gateway can require authentication without a separate token.
+    // The learner's provider key goes in the provider headers; byok_only on the gateway blocks Unified Billing fallback.
+    const res: Response = await (env.AI as any).gateway(env.AI_GATEWAY_ID).run({
+      provider: 'compat',
+      endpoint: 'chat/completions',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${byok.key}` },
-      body: JSON.stringify({ model: `${byok.provider}/${byok.model}`, messages, max_tokens: maxTokens, ...(thinking !== 'off' && byok.provider === 'openai' ? { reasoning_effort: thinking } : {}) }),
+      query: { model: `${byok.provider}/${byok.model}`, messages, max_tokens: maxTokens, ...(thinking !== 'off' && byok.provider === 'openai' ? { reasoning_effort: thinking } : {}) },
     })
     if (!res.ok) throw new Error(`BYOK ${byok.provider} ${res.status}: ${(await res.text()).slice(0, 300)}`)
     const j: any = await res.json()
